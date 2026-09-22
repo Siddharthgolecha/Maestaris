@@ -1,14 +1,16 @@
 # API-agent runtime
 
-API agents can implement Zerion's worker or orchestrator roles by reading the same repository configuration and mailbox protocol.
+API agents are an optional Zerion runtime.
 
-An API integration should:
+They use the same GitHub-native protocol as ordinary ChatGPT workers:
 
-1. read canonical state before work;
-2. enforce task claims and lease semantics;
-3. isolate substantive work onto task branches;
-4. record durable evidence;
-5. preserve idempotency under retries;
-6. avoid treating generated summaries as authoritative when repository evidence differs.
+- search task Issues;
+- inspect event history;
+- ACK with leases;
+- create linked work PRs;
+- report terminal state;
+- inspect durable evidence.
 
-API agents are an optional runtime, not a requirement of the Zerion protocol.
+API implementations may receive webhooks or dispatch immediately, unlike ordinary ChatGPT sidebar conversations.
+
+That runtime difference must not change the repository protocol. A task created by an API agent should remain understandable to an ordinary ChatGPT worker and vice versa.
