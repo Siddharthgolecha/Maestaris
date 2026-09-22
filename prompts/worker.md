@@ -8,11 +8,12 @@ Within the bounded objective, you have implementation autonomy. Use the best rep
 
 Before substantive work:
 
-- confirm the task matches your identity;
+- confirm the task's project matches your project;
+- if the task contains a `worker:` pin, confirm it matches your identity;
 - check dependencies;
 - confirm no terminal result/review already resolves the task;
 - confirm no other dispatcher owns an unexpired ACK;
-- post ACK.
+- post ACK. Your worker identity in this ACK establishes ownership for the lease.
 
 For repository changes, use a linked task branch/PR. Open a draft PR early when useful for visibility.
 
