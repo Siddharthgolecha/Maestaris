@@ -1,6 +1,16 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "zerion-orchestration"
-version = "0.1.0"
-description = "GitHub-backed orchestration templates for persistent AI workers"
+version = "0.2.0"
+description = "GitHub-backed orchestration templates and CLI for persistent AI workers"
 requires-python = ">=3.10"
 dependencies = ["PyYAML>=6.0"]
+
+[project.scripts]
+zerion = "zerion_orchestration.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["zerion_orchestration*"]
