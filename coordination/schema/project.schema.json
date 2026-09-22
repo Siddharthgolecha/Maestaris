@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Zerion Project",
+  "type": "object",
+  "required": ["schema", "project", "title", "status", "repository", "active_workers", "mailboxes"],
+  "properties": {
+    "schema": {"const": 1},
+    "project": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+    "title": {"type": "string"},
+    "status": {"enum": ["active", "waiting", "dormant", "completed"]},
+    "repository": {"type": "string"},
+    "runtime": {"type": "string"},
+    "canonical_paths": {"type": "array", "items": {"type": "string"}},
+    "orchestrator": {"type": ["string", "null"]},
+    "auditor": {"type": ["string", "null"]},
+    "active_workers": {"type": "array", "items": {"type": "string"}},
+    "dormant_workers": {"type": "array", "items": {"type": "string"}},
+    "mailboxes": {"type": "object"}
+  }
+}
