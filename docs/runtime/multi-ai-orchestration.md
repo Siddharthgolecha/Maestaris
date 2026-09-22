@@ -91,6 +91,11 @@ dynamic.
 The preferred provider setup is **one orchestrator first**, not manual creation of
 every worker schedule.
 
+There is exactly one unavoidable provider-side bootstrap action: the user creates or
+invokes that orchestrator in ChatGPT, Gemini Spark, Claude, or another runtime. GitHub
+cannot create a provider-owned chat/task on its own. After that, the repository should
+carry everything needed for the orchestrator to configure the rest.
+
 When `scheduler_bootstrap.enabled` is true, an orchestrator should read the configured
 `pools` and reconcile its own runtime's dispatcher schedules. A provider that supports
 schedule management should create the missing schedules, update drifted ones, and avoid
@@ -110,14 +115,20 @@ Gemini Spark orchestrator
 This makes the user-facing bootstrap:
 
 ```text
-connect GitHub
+connect GitHub to provider
       |
-create one Zerion orchestrator
+user creates ONE provider orchestrator
       |
-      +--> orchestrator reads repository topology
-      +--> creates/reconciles worker schedules
-      +--> worker schedules service READY queue
+prompt: "Use Zerion on OWNER/REPO as orchestrator."
+      |
+      +--> orchestrator reads AGENTS.md + coordination/zerion.yaml
+      +--> discovers pools / cadence / identities / protocol
+      +--> creates or reconciles its provider-owned worker schedules
+      +--> worker schedules service the shared READY queue
 ```
+
+GitHub is the bootstrap memory and desired-state source; the provider remains the
+owner of its actual scheduled tasks.
 
 Live schedules are intentionally not copied into GitHub as canonical state. They are
 provider runtime objects. GitHub records the desired topology and all durable work.
