@@ -199,8 +199,8 @@ def validate_repository(root: Path) -> ValidationResult:
     if registry:
         if registry.get("schema") != 1:
             errors.append(f"{registry_path}: schema must be 1")
-        if registry.get("protocol_version") != 3:
-            errors.append(f"{registry_path}: protocol_version must be 3")
+        if registry.get("protocol_version") != 4:
+            errors.append(f"{registry_path}: protocol_version must be 4")
         if registry.get("entrypoint") != "AGENTS.md":
             errors.append(f"{registry_path}: entrypoint must be AGENTS.md")
 
@@ -220,7 +220,7 @@ def validate_repository(root: Path) -> ValidationResult:
                     errors.append(f"{registry_path}: github.{key} is required")
             status_labels = github.get("status_labels")
             required_statuses = {
-                "assigned", "claimed", "blocked", "needs_review",
+                "ready", "claimed", "blocked", "needs_review",
                 "accepted", "revise", "rejected"
             }
             if not isinstance(status_labels, dict):
