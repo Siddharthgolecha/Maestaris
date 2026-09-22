@@ -374,6 +374,7 @@ Zerion therefore makes GitHub the single live state machine. Protocol v4 additio
 - [Protocol](docs/protocol.md)
 - [GitHub-native integration](docs/github-native.md)
 - [GitHub Projects](docs/github-projects.md)
+- [Multi-model GitHub runtimes](docs/runtime/multi-model-github.md)
 - [ChatGPT scheduled runtime](docs/runtime/chatgpt-scheduled.md)
 - [Manual chat runtime](docs/runtime/manual-chat.md)
 - [Quick start](docs/quickstart.md)
