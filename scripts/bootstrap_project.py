@@ -8,4 +8,15 @@ sys.path.insert(0, str(ROOT))
 from zerion_orchestration.cli import main
 
 if __name__ == "__main__":
-    raise SystemExit(main(["init", *sys.argv[1:]]))
+    if len(sys.argv) < 3:
+        print("usage: bootstrap_project.py <project-name> <worker> [worker ...]")
+        raise SystemExit(2)
+    raise SystemExit(
+        main(
+            [
+                "--root", str(ROOT),
+                "init", sys.argv[1],
+                "--workers", *sys.argv[2:],
+            ]
+        )
+    )
