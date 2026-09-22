@@ -86,9 +86,83 @@ Let different runtimes prefer different work:
 The Issue may pin a worker only when required. Otherwise dispatcher selection remains
 dynamic.
 
+## One-orchestrator bootstrap
+
+The preferred provider setup is **one orchestrator first**, not manual creation of
+every worker schedule.
+
+When `scheduler_bootstrap.enabled` is true, an orchestrator should read the configured
+`pools` and reconcile its own runtime's dispatcher schedules. A provider that supports
+schedule management should create the missing schedules, update drifted ones, and avoid
+duplicates by using stable instance names.
+
+For the default Zerion topology:
+
+```text
+pools: A, B
+
+Gemini Spark orchestrator
+  -> ensures zerion-gemini-spark-pool-A exists
+  -> ensures zerion-gemini-spark-pool-B exists
+  -> keeps them hourly and staggered
+```
+
+This makes the user-facing bootstrap:
+
+```text
+connect GitHub
+      |
+create one Zerion orchestrator
+      |
+      +--> orchestrator reads repository topology
+      +--> creates/reconciles worker schedules
+      +--> worker schedules service READY queue
+```
+
+Live schedules are intentionally not copied into GitHub as canonical state. They are
+provider runtime objects. GitHub records the desired topology and all durable work.
+
+### Gemini Spark orchestrator bootstrap prompt
+
+Start one Gemini Spark task with instructions like:
+
+```text
+Act as the Zerion orchestrator for OWNER/REPO.
+
+Read AGENTS.md and coordination/zerion.yaml first. Treat GitHub as the durable system
+of record.
+
+On startup, inspect scheduler_bootstrap and the configured pools. Because Gemini Spark
+supports conversational schedule management, ensure this task has one recurring Spark
+worker-dispatcher schedule for every configured Zerion pool.
+
+Use stable schedule/instance names from the configured template. For the default
+configuration create/reconcile:
+- zerion-gemini-spark-pool-A, hourly, using the configured Pool A minute hint;
+- zerion-gemini-spark-pool-B, hourly, using the configured Pool B minute hint.
+
+Do not create duplicates. If a matching schedule exists, inspect and update it instead.
+Each generated worker schedule must read AGENTS.md on every run, poll the shared READY
+queue, respect dependencies and unexpired ACK leases, claim at most one task, and use
+its stable dispatcher/runtime/instance identity in the ACK.
+
+After reconciling worker schedules, perform the normal Zerion orchestrator duties:
+review unreviewed terminal results, inspect actual PR/check/artifact evidence, post
+ACCEPTED/REVISE/REJECTED, merge only when warranted, and create bounded READY work
+only when useful.
+
+Reconcile the worker schedules again on future orchestrator runs so missing, paused,
+or drifted dispatcher schedules are repaired when safe.
+```
+
+Gemini Spark supports creating and editing schedules conversationally, so the
+orchestrator can perform this bootstrap from the task thread. If provider capabilities
+change, capability detection wins over these instructions.
+
 ## Gemini Spark scheduled worker prompt
 
-Create a Spark schedule and use a prompt like:
+Normally the Gemini orchestrator creates these schedules. The generated Pool A/B
+schedule should use a prompt equivalent to:
 
 ```text
 Act as Zerion worker dispatcher Pool A for OWNER/REPO.
