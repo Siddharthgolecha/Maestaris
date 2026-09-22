@@ -1,0 +1,30 @@
+schema: 1
+worker: audit-worker
+project: example-project
+lifecycle: idle
+
+mailbox:
+  pr: null
+
+task:
+  id: null
+  status: null
+  priority: null
+  task_pr: null
+
+claim:
+  dispatcher: null
+  claimed_at: null
+  lease_hours: 3
+
+result:
+  status: null
+  commit: null
+  task_pr: null
+
+last_review:
+  task_id: null
+  status: null
+  reviewed_at: null
+
+updated_at: null

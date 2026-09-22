@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "zerion-orchestration"
-version = "0.2.0"
-description = "GitHub-backed orchestration templates and CLI for persistent AI workers"
+version = "0.3.0"
+description = "Agent-native, GitHub-backed orchestration protocol for persistent AI workers"
 requires-python = ">=3.10"
 dependencies = ["PyYAML>=6.0"]
 

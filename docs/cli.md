@@ -21,7 +21,7 @@ Workers are namespaced automatically as project-role, for example:
     quantum-compression-validation
     quantum-compression-audit
 
-The command creates the project registry, agent registry entries, and an orchestrator entry when needed.
+The command creates the project registry, agent registry entries, one current-state index per worker, registers the project in `coordination/zerion.yaml`, and creates a root `AGENTS.md` only when one does not already exist. Existing `AGENTS.md` instructions are never overwritten.
 
 ## One-command GitHub bootstrap
 

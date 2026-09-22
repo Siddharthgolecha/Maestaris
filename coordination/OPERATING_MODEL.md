@@ -1,14 +1,51 @@
 # Zerion operating model
 
-## Canonical state
+## Agent entry point
 
-The default precedence is:
+The root `AGENTS.md` is the normative bootstrap for AI agents.
+
+A fresh session reads:
 
 ```text
-repository state > chat memory > remembered summaries
+AGENTS.md
+   |
+   v
+coordination/zerion.yaml
+   |
+   +--> projects/<project>.yaml
+   +--> agents/<worker>.yaml
+   +--> state/<worker>.yaml
+                         |
+                         v
+                     mailbox PR
+                         |
+                         v
+                  task PR / evidence
 ```
 
-Projects may name additional canonical files. A worker must read them before acting.
+## Layers of durable truth
+
+Zerion separates durable information by purpose.
+
+### 1. Configuration
+
+`coordination/zerion.yaml`, project files, and agent files define topology, identity, ownership, defaults, and canonical paths.
+
+### 2. Current-state index
+
+`coordination/state/<worker>.yaml` gives an agent a cheap machine-readable snapshot of the latest known worker/task state.
+
+It is an index, not an immutable event log.
+
+### 3. Control-plane event log
+
+The long-lived mailbox PR records assignments, ACK claims, terminal worker reports, and orchestrator reviews in chronological order.
+
+### 4. Substantive evidence
+
+Task branches and PRs, commits, CI, formal verification, experimental outputs, and other artifacts establish what actually happened.
+
+If a state index conflicts with newer durable mailbox or task evidence, use the newer evidence and repair the index. Chat memory never overrides durable GitHub evidence.
 
 ## Control plane and work plane
 
@@ -17,11 +54,11 @@ Mailbox PR = control plane
 Task PR    = work plane
 ```
 
-Mailbox PRs are long-lived coordination channels. They carry assignments, ACK claims, terminal worker reports, and orchestrator reviews. They should not contain substantive project changes.
+Mailbox PRs should not contain substantive project changes.
 
 ## Worker identity
 
-Worker identity is configuration, not runtime identity. A generic dispatcher may execute work as a named specialist worker as long as it reads that worker's configuration and assignment first.
+Worker identity is configuration, not runtime identity. A generic dispatcher may execute work as a named specialist worker only after reading the worker's agent file, state index, and mailbox.
 
 ## Bounded assignments
 
@@ -33,14 +70,23 @@ Every task has a stable `task_id`. A dispatcher skips work when the task already
 
 ## ACK leases
 
-An ACK may contain:
+An ACK contains a claim timestamp and lease duration. The default comes from `coordination/zerion.yaml`.
+
+If a lease expires without a terminal result, the orchestrator may mark the claim stale and release or reassign it.
+
+## State transitions
+
+The normal current-state lifecycle is:
 
 ```text
-claimed_at: <timestamp>
-lease_hours: 3
+idle
+  -> assigned
+  -> claimed
+  -> done | blocked | needs_review
+  -> idle | assigned | dormant
 ```
 
-If the lease expires without a terminal result, the orchestrator may mark the task stalled and release or reassign it.
+Mailbox events remain the audit history for those transitions.
 
 ## Terminal states
 

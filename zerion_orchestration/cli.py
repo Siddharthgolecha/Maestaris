@@ -11,8 +11,12 @@ from .core import (
     build_agent,
     build_orchestrator,
     build_project,
+    build_registry,
+    build_state,
     dump_yaml,
+    ensure_agents_entrypoint,
     ensure_layout,
+    load_yaml,
     validate_name,
     validate_repository,
 )
@@ -35,9 +39,13 @@ def _maybe_repo(root: Path, requested: str | None) -> str:
 def command_init(args: argparse.Namespace) -> int:
     root = _root(args.root)
     ensure_layout(root)
+    created_agents_md = ensure_agents_entrypoint(root)
     validate_name(args.project, "project")
     for role in args.workers:
         validate_name(role, "worker role")
+
+    registry_path = root / "coordination" / "zerion.yaml"
+    registry = load_yaml(registry_path) if registry_path.exists() else build_registry()
 
     project_path = root / "coordination" / "projects" / f"{args.project}.yaml"
     if project_path.exists() and not args.force:
@@ -45,6 +53,13 @@ def command_init(args: argparse.Namespace) -> int:
         return 2
 
     workers = [f"{args.project}-{role}" for role in args.workers]
+    for worker in workers:
+        agent_path = root / "coordination" / "agents" / f"{worker}.yaml"
+        state_path = root / "coordination" / "state" / f"{worker}.yaml"
+        if not args.force and (agent_path.exists() or state_path.exists()):
+            occupied = agent_path if agent_path.exists() else state_path
+            print(f"worker already exists: {occupied}", file=sys.stderr)
+            return 2
     repository = _maybe_repo(root, args.repository)
     title = args.title or args.project.replace("-", " ").title()
 
@@ -57,15 +72,23 @@ def command_init(args: argparse.Namespace) -> int:
         build_project(args.project, title, repository, args.runtime, workers),
     )
 
+    lease_hours = int((registry.get("defaults") or {}).get("ack_lease_hours", 3))
     for index, (worker, role) in enumerate(zip(workers, args.workers)):
         agent_path = root / "coordination" / "agents" / f"{worker}.yaml"
-        if agent_path.exists() and not args.force:
-            print(f"agent already exists: {agent_path}", file=sys.stderr)
-            return 2
+        state_path = root / "coordination" / "state" / f"{worker}.yaml"
         pool = "A" if index % 2 == 0 else "B"
         dump_yaml(agent_path, build_agent(worker, args.project, role, pool))
+        dump_yaml(state_path, build_state(worker, args.project, lease_hours))
+
+    registered = list(registry.get("projects") or [])
+    if args.project not in registered:
+        registered.append(args.project)
+    registry["projects"] = registered
+    dump_yaml(registry_path, registry)
 
     print(f"Initialized Zerion project '{args.project}' with {len(workers)} worker(s).")
+    if created_agents_md:
+        print("Created root AGENTS.md entry point.")
     print(f"Project registry: {project_path.relative_to(root)}")
 
     if args.mailboxes:
@@ -123,7 +146,8 @@ def command_validate(args: argparse.Namespace) -> int:
     if not getattr(args, "quiet", False):
         print(
             f"Zerion configuration validation OK: "
-            f"{len(result.projects)} project(s), {len(result.agents)} agent(s)"
+            f"{len(result.projects)} project(s), {len(result.agents)} agent(s), "
+            f"{len(result.states)} worker state index(es)"
         )
     return 0
 
@@ -142,8 +166,10 @@ def command_status(args: argparse.Namespace) -> int:
         payload = {
             "ok": result.ok,
             "errors": result.errors,
+            "registry": result.registry,
             "projects": result.projects,
             "agents": result.agents,
+            "states": result.states,
         }
         print(json.dumps(payload, indent=2, sort_keys=True))
         return 0 if result.ok else 1

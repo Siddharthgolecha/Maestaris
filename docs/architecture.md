@@ -1,37 +1,69 @@
 # Architecture
 
-Zerion is built around a durable coordination layer in GitHub.
+Zerion is an agent-native, repository-first orchestration protocol.
+
+## Entry path
+
+A fresh AI session enters through `AGENTS.md`:
 
 ```text
-User
- |
- v
-Orchestrator
- |
- v
-GitHub coordination state
- |
- +--> Worker Pool A --> specialist worker
- |
- +--> Worker Pool B --> specialist worker
- |
- v
-task branches / PRs / CI / artifacts
+User / scheduler / runtime
+          |
+          v
+      AGENTS.md
+          |
+          v
+coordination/zerion.yaml
+          |
+   +------+------+ 
+   |      |      |
+project  agent  state
+   |      |      |
+   +------+------+ 
+          |
+          v
+      mailbox PR
+          |
+          v
+ task PR / durable evidence
 ```
 
-The key separation is:
+The CLI is optional setup/maintenance tooling, not the primary worker runtime.
 
-```text
-control plane = mailbox PRs
-work plane    = task branches + task PRs
-```
+## Durable layers
 
-A mailbox is long-lived and lightweight. A task PR contains the actual code, research, data, proofs, experiments, or writing.
+### Global registry
+
+`coordination/zerion.yaml` identifies protocol version, canonical branch, orchestrator, worker pools, defaults, and projects.
+
+### Project and agent registries
+
+Project files define membership and canonical paths. Agent files define specialist identity and dispatcher-pool ownership.
+
+### Current-state index
+
+`coordination/state/<worker>.yaml` is a small machine-readable snapshot that lets a fresh agent cheaply discover the latest known task, claim, result, review, and mailbox.
+
+It is deliberately treated as an index rather than final evidence.
+
+### Control-plane event log
+
+Long-lived mailbox PRs record assignments, ACKs, worker terminal reports, and orchestrator reviews.
+
+### Work-plane evidence
+
+Task PRs contain actual code, research, data, proofs, experiments, or writing. CI and artifacts verify or preserve results.
+
+## Precedence
+
+When data disagrees, use the newest relevant durable GitHub evidence. A stale state index should be repaired; it must not override a newer mailbox event or task PR.
+
+Chat memory never outranks durable repository/GitHub state.
 
 ## Reconstruction property
 
-A healthy Zerion project can be reconstructed from repository state without requiring the original conversations. That means current objectives, worker identity, evidence, decisions, blockers, and accepted results all have durable representations.
+A healthy Zerion project can be reconstructed without the original conversations. Current topology, task ownership, decisions, blockers, and evidence all have durable representations.
 
 ## Runtime adapters
 
-The protocol is runtime-independent. ChatGPT scheduled tasks, manual conversations, API agents, CI jobs, or other runtimes may act as dispatchers as long as they respect the same task/ACK/result/review semantics.
+ChatGPT conversations, scheduled tasks, API agents, coding agents, CI jobs, or other runtimes may act as dispatchers or workers as long as they follow `AGENTS.md` and the same task/ACK/result/review semantics.
