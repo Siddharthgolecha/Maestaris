@@ -20,7 +20,7 @@ from zerion_orchestration.protocol import (
 
 LABEL_COLORS = {
     "task": "5319e7",
-    "assigned": "d4c5f9",
+    "ready": "d4c5f9",
     "claimed": "1d76db",
     "blocked": "d73a4a",
     "needs_review": "fbca04",
