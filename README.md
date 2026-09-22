@@ -46,6 +46,45 @@ Zerion is useful when you want to treat multiple normal ChatGPT conversations as
 
 The chats do the reasoning. GitHub carries the durable state.
 
+## Zerion is a seed, not the final repository architecture
+
+A repository created from Zerion is expected to **evolve away from the template** when the project benefits from it.
+
+The agent should inspect what GitHub capabilities are available and shape the repository accordingly.
+
+For example, it may decide to:
+
+- create a Project and custom views;
+- use native Issue Types or Issue Fields in an organization;
+- replace free-text dependencies with native sub-issues/dependencies;
+- introduce milestones for phases/releases;
+- add rulesets and required checks;
+- create domain-specific Actions workflows;
+- use Releases, artifacts, or attestations for provenance;
+- restructure directories and add nested `AGENTS.md` files;
+- add an evidence ledger for research, or skip it for a simple software project;
+- remove template mechanisms that have become redundant.
+
+The goal is **not** to keep every Zerion repository looking identical.
+
+The goal is to preserve a few invariants:
+
+```text
+fresh agent can recover the project
+        +
+tasks are safely owned/idempotent
+        +
+evidence is durable and inspectable
+        +
+negative/blocking results are not erased
+        +
+provenance survives agent/chat turnover
+```
+
+For reversible low-risk choices, the agent should make a reasonable decision and continue rather than repeatedly asking the user for implementation preferences.
+
+Human confirmation is primarily for destructive, irreversible, permission/security-sensitive, externally costly, publication/visibility-changing, or genuinely goal-ambiguous decisions.
+
 ## What Zerion is not
 
 Zerion is **not** primarily an API-agent framework.
@@ -320,6 +359,8 @@ v0.5 therefore makes GitHub the single live state machine.
 - **Negative results stay negative.**
 - **Dormancy is healthy.**
 - **No worker is required for project reconstruction.**
+- **The template may evolve. Preserve invariants, not template shape.**
+- **Prefer sensible reversible action over unnecessary permission checks.**
 
 ## Documentation
 
