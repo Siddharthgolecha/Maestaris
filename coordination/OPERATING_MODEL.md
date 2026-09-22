@@ -42,8 +42,8 @@ They change when the architecture of the project changes, not every time a task 
 Live state is reconstructed from the GitHub task Issue.
 
 ```text
-Issue body = ASSIGNED
-comment ACK = claimed
+open task Issue = ready
+comment ACK = claimed + worker ownership
 comment BLOCKED = blocked
 comment DONE / NEEDS_REVIEW = needs review
 comment ACCEPTED = accepted
@@ -89,7 +89,7 @@ Zerion status labels provide richer views such as claimed, blocked, and needs re
 
 ## Polling and idempotency
 
-Because worker chats poll, duplicate invocation is normal.
+Because worker chats poll, duplicate invocation is normal. Publishing work does not assign it; ownership exists only while a valid ACK lease exists.
 
 Safe polling requires:
 
