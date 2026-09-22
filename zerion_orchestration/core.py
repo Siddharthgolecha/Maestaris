@@ -62,7 +62,7 @@ Read `coordination/zerion.yaml`, the relevant project and agent configuration, t
 
 Repository/GitHub evidence is authoritative over chat memory.
 
-For ordinary ChatGPT conversations, GitHub events do not wake the chat. Scheduled or manual workers poll GitHub, then use Issues for assignments/ACK/results and linked pull requests for substantive repository work.
+For ordinary ChatGPT conversations, GitHub events do not wake the chat. Scheduled or manual workers poll GitHub. An open task Issue is READY and unowned by default; the first valid ACK establishes the worker lease. Linked pull requests carry substantive repository work.
 
 Start from the root AGENTS.md in this repository for the complete bootstrap.
 """
