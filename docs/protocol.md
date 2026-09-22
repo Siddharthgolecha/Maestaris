@@ -1,8 +1,8 @@
 # Protocol
 
-## 1. Task Issue
+## Assignment
 
-Create an Issue with title prefix `[Zerion task]` and a body beginning with:
+A bounded task is a GitHub Issue with the configured title prefix and a body beginning:
 
 ```text
 [ORCHESTRATOR:v1]
@@ -11,13 +11,12 @@ project: example-project
 worker: theory-worker
 status: ASSIGNED
 priority: P1
+depends_on: []
 ```
 
-Record the Issue number in the worker state index.
+## Claim
 
-## 2. ACK
-
-Before substantive work, the worker posts:
+Before substantive work, a worker posts:
 
 ```text
 [WORKER:theory-worker:v1]
@@ -28,42 +27,46 @@ claimed_at: 2026-01-01T00:00:00Z
 lease_hours: 3
 ```
 
-Then state moves to `claimed`.
+The first valid unexpired ACK owns the task.
 
-## 3. Work PR
+## Work
 
-For repository changes, use a branch such as:
+For repository changes, create a task branch and linked draft PR early.
+
+A closing keyword such as `Resolves #123` may connect merge to Issue completion.
+
+## Worker terminal event
+
+Post DONE, BLOCKED, or NEEDS_REVIEW on the Issue with exact durable evidence.
+
+## Orchestrator review
+
+Post ACCEPTED, REVISE, or REJECTED after inspecting actual evidence.
+
+Native PR reviews are optional UX. The Issue-side Zerion review event is the protocol record.
+
+## Live-state reduction
+
+Task status is reconstructed by replaying Issue comments in order:
 
 ```text
-zerion/task/123-short-slug
+Issue assignment       -> assigned
+ACK                    -> claimed
+BLOCKED                -> blocked
+DONE / NEEDS_REVIEW    -> needs_review
+ACCEPTED               -> accepted
+REVISE                 -> revise
+REJECTED               -> rejected
 ```
 
-Open a draft PR early and link it to the task Issue. A closing keyword such as `Resolves #123` is preferred when merge should finish the task.
+No YAML state cache is required.
 
-## 4. Terminal worker result
+## Derived labels
 
-Post DONE, BLOCKED, or NEEDS_REVIEW on the Issue with exact evidence.
+GitHub Actions reduce the same event history and synchronize one Zerion status label plus the configured task/priority labels.
 
-## 5. Orchestrator review
-
-Inspect actual evidence. Native PR reviews may mirror the decision, but always record:
-
-```text
-[ORCHESTRATOR-REVIEW:v1]
-task_id: example-theory-0001
-status: ACCEPTED
-```
-
-Then synchronize state.
-
-- ACCEPTED: finalize/integrate work and close Issue as completed.
-- REVISE: leave Issue open.
-- REJECTED: close Issue as not planned.
+Labels aid search and Projects. They are not canonical state.
 
 ## Idempotency
 
-Stable task IDs plus ACK leases prevent repeated polling from duplicating work. The Issue comment history is checked before any claim or terminal action.
-
-## State index
-
-The YAML state file is optimized for discovery and recovery. It must never override newer GitHub Issue/PR evidence.
+Every worker must read the Issue history before acting. Stable task IDs, ACK leases, terminal events, and reviews make polling retry-safe.
