@@ -17,7 +17,7 @@ Use durable evidence in this order:
 5. GitHub task Issues and their comments;
 6. linked pull requests, commits, Actions/checks, proofs, experiments, and artifacts.
 
-There is intentionally **no mutable worker-state YAML** in protocol v3.
+There is intentionally **no mutable worker-state YAML** in protocol v4.
 
 GitHub task Issues and their comments are the live control plane.
 
