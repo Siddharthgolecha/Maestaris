@@ -15,7 +15,7 @@ Live task state belongs in GitHub Issues, comments, PRs, checks, and artifacts.
 
 ## What is intentionally absent
 
-Protocol v3 has no:
+Protocol v4 has no:
 
 - `coordination/state/`
 - permanent mailbox PR registry
@@ -27,6 +27,6 @@ Those concepts duplicated GitHub's own state.
 
 A Zerion task is a GitHub Issue.
 
-Its body is the assignment. Comments record ACK, worker terminal results, and orchestrator reviews.
+Its body publishes READY work. Comments record the ACK that establishes worker ownership, terminal results, and orchestrator reviews.
 
 GitHub Actions derive labels for search and Projects dashboards, but Issue/comment history remains authoritative.
