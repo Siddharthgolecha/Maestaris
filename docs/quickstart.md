@@ -1,38 +1,66 @@
 # Quick start
 
-## 1. Add Zerion to a project
+## For an AI agent
 
-Use this repository as a template, fork it, or copy the coordination layer into an existing repository.
+Start with the repository's root `AGENTS.md`.
 
-## 2. Register a project
+Do not begin by trusting chat history. Follow its bootstrap sequence to read:
 
-Copy `coordination/templates/PROJECT_TEMPLATE.yaml` into `coordination/projects/<project>.yaml` and edit the canonical paths and workers.
+1. `coordination/zerion.yaml`;
+2. the relevant project;
+3. agent and worker-state configuration;
+4. the mailbox PR;
+5. canonical project files;
+6. actual task evidence.
 
-## 3. Register workers
+No CLI invocation is required for agent operation.
 
-Copy `coordination/templates/AGENT_TEMPLATE.yaml` once per specialist. Assign each worker to a dispatcher pool.
+## For repository setup
 
-## 4. Create mailbox PRs
-
-Create one tiny, long-lived draft PR per active worker. The branch should contain only its mailbox marker file.
-
-Do not commit substantive work to mailbox branches.
-
-## 5. Assign a bounded task
-
-Post an `[ORCHESTRATOR:v1]` message using the assignment template.
-
-## 6. Run a worker
-
-A worker pool discovers the assignment, posts ACK, reads canonical state, creates a task branch, performs work, verifies it, opens or updates a task PR, and posts a terminal result.
-
-## 7. Review
-
-The orchestrator inspects the actual commit, PR, CI, proof, experiment, or artifact before accepting the result.
-
-## 8. Validate configuration
+Install Zerion locally:
 
 ```bash
-python -m pip install pyyaml
-python scripts/validate_config.py
+python -m pip install -e .
 ```
+
+Initialize a project:
+
+```bash
+zerion init my-project \
+  --workers theory implementation audit \
+  --repository owner/repository
+```
+
+This registers the project globally, creates namespaced agent entries, and creates one current-state index per worker.
+
+## Optional mailbox creation
+
+With authenticated GitHub CLI:
+
+```bash
+zerion mailboxes create my-project --commit
+```
+
+This creates one long-lived draft mailbox PR per worker and synchronizes the PR number across project, agent, and state registries.
+
+Do not merge mailbox PRs and do not put substantive work on mailbox branches.
+
+## Assign a bounded task
+
+Post an `[ORCHESTRATOR:v1]` message using the assignment template and synchronize the worker state index to `assigned`.
+
+## Run a worker
+
+A worker pool uses the state index to find candidates, verifies the real mailbox state, posts ACK, updates state to `claimed`, reads canonical paths, creates a task PR, performs and verifies work, then posts a terminal result and synchronizes state.
+
+## Review
+
+The orchestrator inspects the actual task PR, commit, CI, proof, experiment, or artifact before accepting the result.
+
+## Validate
+
+```bash
+zerion validate
+```
+
+Validation checks the global registry, projects, agents, worker-state coverage, pool references, and mailbox-reference consistency.
