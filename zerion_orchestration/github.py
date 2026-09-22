@@ -64,6 +64,36 @@ def _api_json(root: Path, args: list[str]) -> Any:
     return json.loads(out) if out else None
 
 
+def _open_pr_number(root: Path, repository: str, branch: str) -> int | None:
+    out = _run(
+        [
+            "gh", "pr", "list",
+            "--repo", repository,
+            "--head", branch,
+            "--state", "open",
+            "--json", "number",
+            "-q", ".[0].number // empty",
+        ],
+        root,
+    )
+    return int(out) if out else None
+
+
+def _marker_exists(root: Path, repository: str, marker: str, branch: str) -> bool:
+    try:
+        _run(
+            [
+                "gh", "api", "--method", "GET",
+                f"repos/{repository}/contents/{marker}",
+                "-f", f"ref={branch}",
+            ],
+            root,
+        )
+        return True
+    except GitHubCLIError:
+        return False
+
+
 def create_mailboxes(
     root: Path,
     project_name: str,
@@ -95,6 +125,18 @@ def create_mailboxes(
 
         branch = f"zerion/mailbox/{project_name}/{worker}"
         marker = f"coordination/mailboxes/{project_name}/{worker}.md"
+
+        existing_pr = _open_pr_number(root, str(repo), branch)
+        if existing_pr is not None:
+            mailboxes[worker] = existing_pr
+            agent_path = root / "coordination" / "agents" / f"{worker}.yaml"
+            if agent_path.exists():
+                agent = load_yaml(agent_path)
+                agent.setdefault("mailbox", {})["pr"] = existing_pr
+                dump_yaml(agent_path, agent)
+            dump_yaml(project_path, project)
+            continue
+
         encoded = base64.b64encode(
             (
                 f"# Zerion mailbox: {worker}\n\n"
@@ -104,25 +146,31 @@ def create_mailboxes(
             ).encode("utf-8")
         ).decode("ascii")
 
-        _run(
-            [
-                "gh", "api", "--method", "POST",
-                f"repos/{repo}/git/refs",
-                "-f", f"ref=refs/heads/{branch}",
-                "-f", f"sha={base_sha}",
-            ],
-            root,
-        )
-        _run(
-            [
-                "gh", "api", "--method", "PUT",
-                f"repos/{repo}/contents/{marker}",
-                "-f", f"message=Create Zerion mailbox for {worker}",
-                "-f", f"content={encoded}",
-                "-f", f"branch={branch}",
-            ],
-            root,
-        )
+        try:
+            _run(
+                [
+                    "gh", "api", "--method", "POST",
+                    f"repos/{repo}/git/refs",
+                    "-f", f"ref=refs/heads/{branch}",
+                    "-f", f"sha={base_sha}",
+                ],
+                root,
+            )
+        except GitHubCLIError as exc:
+            if "Reference already exists" not in str(exc):
+                raise
+
+        if not _marker_exists(root, str(repo), marker, branch):
+            _run(
+                [
+                    "gh", "api", "--method", "PUT",
+                    f"repos/{repo}/contents/{marker}",
+                    "-f", f"message=Create Zerion mailbox for {worker}",
+                    "-f", f"content={encoded}",
+                    "-f", f"branch={branch}",
+                ],
+                root,
+            )
         url = _run(
             [
                 "gh", "pr", "create",
@@ -154,6 +202,8 @@ def create_mailboxes(
             agent = load_yaml(agent_path)
             agent.setdefault("mailbox", {})["pr"] = number
             dump_yaml(agent_path, agent)
+
+        dump_yaml(project_path, project)
 
     dump_yaml(project_path, project)
     return created
