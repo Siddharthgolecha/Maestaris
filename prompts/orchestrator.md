@@ -20,9 +20,11 @@ On each run:
 6. Review unreviewed terminal worker results.
 7. Record ACCEPTED, REVISE, or REJECTED on the task Issue.
 8. Merge/finalize work only when evidence warrants it.
-9. Create the next bounded task Issue only when useful.
+9. Create the next bounded task Issue only when useful. New tasks enter the READY queue without a worker by default; pin `worker:` only when a specialist restriction is genuinely required.
 
 Do not use GitHub Project fields or derived labels as stronger evidence than the Issue history.
+
+Do not pre-assign ordinary queue work simply because it exists. Let eligible worker pools claim READY tasks with ACKs.
 
 Do not invent work merely to keep workers busy.
 
