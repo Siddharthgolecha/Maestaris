@@ -50,23 +50,35 @@ It does **not** require a particular AI runtime. The protocol can be used with o
 
 ## Quick start
 
-1. Use this repository as a template or copy the `coordination/` layer into your project.
-2. Copy `coordination/templates/PROJECT_TEMPLATE.yaml` to `coordination/projects/<project>.yaml`.
-3. Create one agent file per specialist from `coordination/templates/AGENT_TEMPLATE.yaml`.
-4. Create one long-lived draft mailbox PR per active worker.
-5. Put only coordination messages in mailbox PRs; put substantive work in task PRs.
-6. Give the orchestrator and worker runtime the prompts in `prompts/`.
-7. Validate configuration with:
+Install the project locally:
 
-```bash
-python scripts/validate_config.py
-```
+    python -m pip install -e .
 
-For a guided local bootstrap:
+Then initialize a project:
 
-```bash
-python scripts/bootstrap_project.py demo-project theory implementation audit
-```
+    zerion init demo-project \
+      --workers theory implementation audit \
+      --repository owner/repository
+
+This registers a project plus namespaced specialist workers such as demo-project-theory and demo-project-audit.
+
+If GitHub CLI is installed and authenticated, Zerion can also create the long-lived draft mailbox PRs and record their PR numbers:
+
+    zerion init demo-project \
+      --workers theory implementation audit \
+      --repository owner/repository \
+      --mailboxes \
+      --commit
+
+Inspect the orchestration state with:
+
+    zerion status
+
+Validate it with:
+
+    zerion validate
+
+The manual template-driven setup remains supported. See [CLI documentation](docs/cli.md) and [Quick start](docs/quickstart.md).
 
 ## Message lifecycle
 
