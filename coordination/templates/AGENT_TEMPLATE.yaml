@@ -1,0 +1,16 @@
+schema: 1
+agent: worker-name
+project: my-project
+role: specialist
+dispatcher_pool: A
+status: active
+
+mailbox:
+  transport: pull_request
+  pr: null
+
+project_paths:
+  - .
+
+current_task: null
+current_objective: null
