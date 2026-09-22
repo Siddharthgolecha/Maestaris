@@ -72,6 +72,28 @@ def validate_name(value: str, label: str = "name") -> None:
         )
 
 
+DEFAULT_AGENTS_MD = """# Agent operating instructions
+
+This repository uses Zerion's repository-first orchestration protocol.
+
+Before substantive work, read `coordination/zerion.yaml`, resolve the relevant project and worker, then read the project registry, agent configuration, worker state index, mailbox PR, canonical project paths, and actual task evidence.
+
+Repository/GitHub evidence is authoritative over chat memory.
+
+`coordination/state/<worker>.yaml` is a fast current-state index. The mailbox PR is the chronological control-plane log. Task PRs, commits, CI, proofs, experiments, and artifacts are the substantive evidence.
+
+Do not put substantive work on mailbox branches. Use task branches/PRs. Preserve stable task IDs, ACK ownership, negative results, and idempotency under retries.
+"""
+
+
+def ensure_agents_entrypoint(root: Path) -> bool:
+    path = root / "AGENTS.md"
+    if path.exists():
+        return False
+    path.write_text(DEFAULT_AGENTS_MD, encoding="utf-8")
+    return True
+
+
 def build_registry() -> dict[str, Any]:
     return {
         "schema": 1,
@@ -131,6 +153,10 @@ def validate_repository(root: Path) -> ValidationResult:
     projects: dict[str, dict[str, Any]] = {}
     agents: dict[str, dict[str, Any]] = {}
     states: dict[str, dict[str, Any]] = {}
+
+    agents_entrypoint = root / "AGENTS.md"
+    if not agents_entrypoint.exists():
+        errors.append(f"{agents_entrypoint}: missing agent entry point")
 
     if not registry_path.exists():
         errors.append(f"{registry_path}: missing Zerion registry")
