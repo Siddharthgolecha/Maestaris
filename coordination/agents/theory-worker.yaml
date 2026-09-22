@@ -10,6 +10,3 @@ control_plane:
 
 project_paths:
   - examples/research-demo
-
-current_task: null
-current_objective: null

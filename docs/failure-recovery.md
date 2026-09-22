@@ -1,45 +1,41 @@
 # Failure recovery
 
-## State points to a stale task Issue
+## Chat loses context
 
-Inspect the Issue and linked PR evidence. Repair the state index to the newest durable GitHub state.
+Read `AGENTS.md`, static project/agent config, then search open Zerion task Issues and reconstruct state from comments.
 
-## Two dispatchers race
+## Labels disagree with comments
 
-Both must inspect comments before ACK. The first valid unexpired ACK lease owns the task.
+Comments win. The label workflow should repair derived labels on the next relevant Issue/comment event.
+
+## Project board disagrees with Issues
+
+Issues win. Projects is a view.
+
+## Two workers race
+
+The first valid unexpired ACK owns the task. Later dispatchers must stop after reading the Issue comments.
 
 ## Worker ACKs and disappears
 
-After lease expiry, record the stale claim on the Issue and reassign or release the task.
+After the lease expires, the orchestrator may record the stale claim and allow reassignment.
 
-## Draft PR exists but no terminal report
+## Draft PR exists with no terminal report
 
-Treat the task as still active unless evidence proves otherwise. Inspect checks and recent commits before reassigning.
+Inspect commits/checks and the ACK lease before reassigning. A draft PR alone does not prove completion.
 
-## Task Issue exists but state index is empty
+## Issue has terminal result but no review
 
-The Issue is durable evidence. Reconstruct state from its body/comments and linked PR.
+The orchestrator reviews the durable evidence and records ACCEPTED, REVISE, or REJECTED.
 
-## PR exists but is not linked to an Issue
+## PR exists but is not linked to a task
 
-Treat it as an audit problem. Link it to the correct task before relying on it as Zerion work.
+Treat it as an audit problem. Link it to the correct Issue before relying on it as Zerion work.
 
-## Issue auto-closed too early
+## GitHub event fired but ChatGPT did nothing
 
-Reopen it when the protocol still requires review or revision. Closing keywords are conveniences, not permission to skip evidence review.
+Expected. GitHub events trigger Actions, not ordinary ChatGPT conversations. The worker will act when manually invoked or when its ChatGPT schedule polls GitHub.
 
-## Chat memory disagrees with GitHub
+## Negative result disappears from a summary
 
-GitHub wins.
-
-## Worker invents a new objective
-
-Reject the scope expansion. Orchestrators create bounded task Issues.
-
-## Negative result disappears
-
-Recover it from Issue comments, commits, or artifacts and restore the state/canonical record without upgrading its classification.
-
-## Legacy mailbox branch contains substantive work
-
-Move substantive changes to a normal task branch/PR. Legacy mailbox PRs remain control-plane-only.
+Recover from Issue comments, PRs, commits, checks, or artifacts. Durable evidence wins over prose summaries.

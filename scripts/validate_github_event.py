@@ -6,11 +6,12 @@ import os
 from pathlib import Path
 import sys
 
+import yaml
+
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from zerion_orchestration.protocol import (
-    TASK_TITLE_PREFIX,
     validate_protocol_comment,
     validate_task_issue,
 )
@@ -23,15 +24,22 @@ def main() -> int:
         return 0
 
     event = json.loads(Path(event_path).read_text(encoding="utf-8"))
+    registry = yaml.safe_load((ROOT / "coordination" / "zerion.yaml").read_text())
+    github = registry["github"]
+
     issue = event.get("issue") or {}
     comment = event.get("comment") or {}
-
-    errors: list[str] = []
-
     title = issue.get("title") or ""
     body = issue.get("body") or ""
-    if title.startswith(TASK_TITLE_PREFIX):
-        errors.extend(validate_task_issue(title, body))
+
+    errors: list[str] = []
+    errors.extend(
+        validate_task_issue(
+            title,
+            body,
+            title_prefix=str(github["task_title_prefix"]),
+        )
+    )
 
     comment_body = comment.get("body") or ""
     if comment_body.startswith("[WORKER:") or comment_body.startswith(

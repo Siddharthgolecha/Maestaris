@@ -1,39 +1,32 @@
-# Coordination layer
+# Zerion coordination configuration
 
-A fresh AI session starts at root `AGENTS.md`, then reads this directory.
+This directory contains **stable configuration only**.
 
-- `zerion.yaml` — global Zerion protocol and GitHub-native defaults.
-- `projects/` — project membership and canonical paths.
-- `agents/` — specialist identity and dispatcher-pool ownership.
-- `state/` — compact current-state indexes.
-- GitHub task Issues — chronological control-plane objects.
-- linked task PRs/checks/artifacts — substantive work and evidence.
-- `templates/` — protocol templates.
-- `schema/` — machine-readable configuration schemas.
-- `OPERATING_MODEL.md` — runtime-independent rules.
+Live task state belongs in GitHub Issues, comments, PRs, checks, and artifacts.
 
-## Preferred transport
+## Files
 
-Zerion v0.4 uses **GitHub Issues** as the preferred task/control-plane transport.
+- `zerion.yaml` — global protocol, GitHub label policy, pools, and registered projects.
+- `projects/` — project membership, canonical paths, and worker lists.
+- `agents/` — worker identities, roles, pool ownership, and relevant paths.
+- `templates/` — reusable Issue/comment/project/agent templates.
+- `schema/` — machine-readable static config schemas.
+- `OPERATING_MODEL.md` — the runtime-independent model.
 
-A task Issue carries:
+## What is intentionally absent
 
-- the orchestrator assignment in its body;
-- worker ACKs and terminal reports in comments;
-- orchestrator review events in comments;
-- native open/closed state and close reason;
-- links to task PRs and other evidence.
+Protocol v3 has no:
 
-This replaces the need for fake long-lived PRs whose only purpose is to hold messages.
+- `coordination/state/`
+- permanent mailbox PR registry
+- mutable current-task fields in agent YAML
 
-## State vs history vs evidence
+Those concepts duplicated GitHub's own state.
 
-`coordination/state/<worker>.yaml` is a fast index.
+## Live control plane
 
-The task Issue is the event history.
+A Zerion task is a GitHub Issue.
 
-Task PRs, commits, CI/checks, proofs, experiments, and artifacts are the evidence.
+Its body is the assignment. Comments record ACK, worker terminal results, and orchestrator reviews.
 
-If the state index conflicts with newer Issue/PR evidence, use the newer evidence and repair the index.
-
-Legacy PR-mailbox fields remain supported for migration but are deprecated.
+GitHub Actions derive labels for search and Projects dashboards, but Issue/comment history remains authoritative.

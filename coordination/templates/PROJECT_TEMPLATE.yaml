@@ -9,14 +9,14 @@ canonical_paths:
   - README.md
 
 orchestrator: orchestrator
-auditor: audit-worker
+auditor: my-project-audit
 
 control_plane:
   transport: github_issue
 
 active_workers:
-  - theory-worker
-  - implementation-worker
-  - audit-worker
+  - my-project-theory
+  - my-project-implementation
+  - my-project-audit
 
 dormant_workers: []

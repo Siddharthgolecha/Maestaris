@@ -1,5 +1,5 @@
 schema: 1
-protocol_version: 2
+protocol_version: 3
 entrypoint: AGENTS.md
 canonical_branch: main
 orchestrator: orchestrator
@@ -9,19 +9,28 @@ defaults:
 
 github:
   task_transport: issue
-  task_issue:
-    title_prefix: "[Zerion task]"
-    accepted_state_reason: completed
-    rejected_state_reason: not_planned
+  task_title_prefix: "[Zerion task]"
+  task_label: "zerion:task"
+  status_labels:
+    assigned: "zerion:assigned"
+    claimed: "zerion:claimed"
+    blocked: "zerion:blocked"
+    needs_review: "zerion:needs-review"
+    accepted: "zerion:accepted"
+    revise: "zerion:revise"
+    rejected: "zerion:rejected"
+  priority_label_prefix: "priority:"
   task_pull_request:
     draft_on_start: true
-    branch_prefix: zerion/task
-    link_keyword: Resolves
+    branch_prefix: "zerion/task"
+    link_keyword: "Resolves"
   native_reviews:
-    enabled: true
     accepted: APPROVE
     revise: REQUEST_CHANGES
     same_actor_fallback: COMMENT
+  projects:
+    optional: true
+    auto_add_filter: 'is:issue label:"zerion:task"'
 
 pools:
   A:

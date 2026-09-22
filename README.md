@@ -2,116 +2,337 @@
 
 **Agents reason. GitHub remembers.**
 
-Zerion is an agent-native orchestration protocol for coordinating persistent AI workers through ordinary GitHub primitives.
+Zerion is a lightweight orchestration protocol for running **long-lived projects with ordinary ChatGPT conversations**.
 
-A fresh AI session starts at `AGENTS.md`, reconstructs its role and current work from GitHub, and continues without depending on prior chat history.
+It came from a practical problem: one ChatGPT chat can do serious work, but long research and engineering projects quickly outgrow one conversation. You want an orchestrator, specialist workers, parallel branches, reproducible evidence, hand-offs, and the ability to close a chat and come back later without losing the project.
 
-## GitHub-native model
+Zerion makes GitHub the durable coordination layer.
+
+```text
+ordinary ChatGPT chats / scheduled chats
+                 |
+                 | poll
+                 v
+          GitHub task Issues
+                 |
+       +---------+---------+
+       |                   |
+       v                   v
+   worker chat         worker chat
+       |                   |
+       +---------+---------+
+                 |
+                 v
+        task PRs / commits
+        checks / artifacts
+                 |
+                 v
+          orchestrator chat
+```
+
+The invariant is simple:
+
+> **Any chat may disappear. The project must still be reconstructible from GitHub.**
+
+## What Zerion is meant for
+
+Zerion is useful when you want to treat multiple normal ChatGPT conversations as persistent specialist workers:
+
+- one chat coordinates the project;
+- other chats specialize in theory, implementation, experiments, review, writing, or anything else;
+- scheduled ChatGPT tasks can periodically poll GitHub when you are away;
+- GitHub holds assignments, ACKs, results, evidence, reviews, branches, PRs, and provenance;
+- GitHub Projects gives you a human dashboard over the same work.
+
+The chats do the reasoning. GitHub carries the durable state.
+
+## What Zerion is not
+
+Zerion is **not** primarily an API-agent framework.
+
+It does not require:
+
+- spinning up disposable API agents;
+- a separate vector database;
+- a message broker;
+- ChatGPT Work;
+- a daemon running on your computer;
+- a CLI in order for the AI workers to operate.
+
+There is a small CLI for static setup and validation, but the protocol is designed so an AI agent can operate directly through GitHub.
+
+## The important constraint: GitHub cannot wake an ordinary chat
+
+GitHub Issues, comments, PRs, and other events can trigger **GitHub Actions**.
+
+They cannot directly invoke an ordinary ChatGPT sidebar conversation.
+
+So Zerion deliberately separates two kinds of automation:
+
+```text
+GitHub event
+    |
+    +--> Actions: validate records, sync labels, run tests, update dashboard
+    |
+    X--> does not wake a normal ChatGPT chat
+
+ChatGPT schedule / user invocation
+    |
+    +--> worker polls GitHub
+         finds eligible task
+         ACKs it
+         works
+         reports result
+```
+
+That is why Zerion is built around **safe polling and idempotency**, not fake webhook-driven chat execution.
+
+## The v0.5 model
+
+Zerion stores stable configuration in the repository and live orchestration state in GitHub itself.
+
+### Stable configuration
 
 ```text
 AGENTS.md
-    |
-    v
-coordination/zerion.yaml
-    |
-    +--> project / agent / state indexes
-    |
-    v
-GitHub task Issue
-    |
-    +--> ACK / worker result / orchestrator review comments
-    |
-    v
-linked draft task PR
-    |
-    v
-commits + Actions/checks + artifacts
+coordination/
+  zerion.yaml
+  projects/
+  agents/
+prompts/
 ```
 
-The preferred mapping is:
+### Live state
 
-| Zerion | GitHub |
-| --- | --- |
-| bounded task | Issue |
-| control-plane history | Issue comments |
-| work in progress | draft PR |
-| substantive result | PR / commit |
-| verification | Actions / checks / artifacts |
-| review UX | native PR review |
-| accepted task | Issue closed as completed |
-| rejected task | Issue closed as not planned |
+```text
+GitHub task Issue
+  ├── assignment in Issue body
+  ├── ACK in comments
+  ├── DONE / BLOCKED / NEEDS_REVIEW in comments
+  └── ACCEPTED / REVISE / REJECTED in comments
 
-The current-state YAML is only a fast index. The Issue/PR/check history is the durable evidence.
+linked task PR
+  ├── code / research / writing changes
+  ├── commits
+  ├── Actions / checks
+  └── artifacts
+```
 
-## Core invariant
+There is intentionally **no mutable `coordination/state/` directory**.
 
-> If every worker disappeared, the project should still be reconstructible from GitHub.
+Keeping a second state machine in YAML created drift and required commits for every coordination transition. GitHub already has durable Issues, comments, PRs, timestamps, close state, and history, so v0.5 uses them directly.
 
-## For AI agents
+## A task from start to finish
 
-Read `AGENTS.md` first.
+The orchestrator opens:
 
-The default lifecycle is:
+```text
+[Zerion task] Prove bounded convergence result
+```
 
-1. discover or create a structured `[Zerion task]` Issue;
-2. ACK in an Issue comment;
-3. open a linked draft PR early for repository work;
-4. execute and verify the bounded objective;
-5. report DONE / BLOCKED / NEEDS_REVIEW in the Issue;
-6. inspect durable evidence;
-7. record the Zerion review event;
-8. close the Issue with GitHub's appropriate close reason when terminal.
+with a structured body:
 
-No CLI is required for agent operation.
+```text
+[ORCHESTRATOR:v1]
+task_id: convergence-theory-0042
+project: convergence
+worker: convergence-theory
+status: ASSIGNED
+priority: P0
+depends_on: []
+...
+```
 
-## Optional CLI
+A worker pool later polls GitHub, sees the task, verifies there is no valid competing ACK, and comments:
 
-The CLI is for setup, local validation, and maintenance:
+```text
+[WORKER:convergence-theory:v1]
+task_id: convergence-theory-0042
+status: ACK
+dispatcher: pool-A
+claimed_at: ...
+lease_hours: 3
+```
+
+For repository work it opens a linked draft PR early.
+
+When finished it posts a terminal result to the Issue with exact evidence. The orchestrator later polls, inspects the actual PR/checks/artifacts, and records ACCEPTED, REVISE, or REJECTED.
+
+If the PR contains `Resolves #42`, GitHub can close the task Issue automatically when the PR merges.
+
+## GitHub Actions do the mechanical work
+
+Zerion ships an Issue/comment workflow that:
+
+1. validates structured Zerion task records;
+2. reconstructs the task's current protocol state from Issue comments;
+3. derives GitHub labels such as `zerion:claimed`, `zerion:blocked`, or `zerion:needs-review`;
+4. preserves unrelated user labels.
+
+Those labels are derived metadata. The Issue history remains authoritative.
+
+## GitHub Projects becomes the mission board
+
+GitHub Projects fits Zerion well because it can remain a **view over Issues**, rather than another required database.
+
+Recommended setup:
+
+1. Create a GitHub Project for your Zerion work.
+2. Enable its **Auto-add to project** workflow.
+3. Point it at your repository with:
+
+```text
+is:issue label:"zerion:task"
+```
+
+4. Enable the built-in workflow that sets newly added items to **Todo**.
+5. Keep the built-in closed-item -> **Done** workflow enabled.
+6. Add useful views such as:
+   - Blocked: `label:zerion:blocked`
+   - Needs review: `label:zerion:needs-review`
+   - Claimed: `label:zerion:claimed`
+   - P0: `label:priority:P0`
+
+The Project is for visibility. A fresh worker must be able to reconstruct work without reading Project-specific fields.
+
+See [GitHub Projects](docs/github-projects.md).
+
+## How ChatGPT workers use Zerion
+
+Every Zerion repository has a root [AGENTS.md](AGENTS.md).
+
+A fresh worker starts there and learns how to:
+
+- resolve its project and role;
+- search for open Zerion task Issues;
+- derive task state from comments;
+- respect ACK leases;
+- read canonical project documents;
+- inspect PR/check evidence;
+- claim work safely;
+- report durable results.
+
+This lets you start a completely fresh conversation and say something as small as:
+
+> Use Zerion on this repository. Act as worker pool A.
+
+or:
+
+> Use Zerion and continue orchestration for this project.
+
+The repository should contain enough durable information for the new chat to recover.
+
+## Suggested ChatGPT topology
+
+For a serious project:
+
+```text
+Orchestrator chat
+    |
+    +-- Worker Pool A scheduled chat
+    |      +-- theory worker identities
+    |      +-- audit worker identities
+    |
+    +-- Worker Pool B scheduled chat
+           +-- implementation identities
+           +-- experiment identities
+```
+
+A worker identity is not the same thing as a scheduled ChatGPT task.
+
+A small number of generic scheduled worker pools can service many specialist identities defined in GitHub.
+
+When you are actively using ChatGPT, you can run a worker immediately. When you are away, scheduled polling provides eventual progress.
+
+## Repository layout
+
+```text
+AGENTS.md
+coordination/
+  zerion.yaml
+  projects/
+    example-project.yaml
+  agents/
+    orchestrator.yaml
+    theory-worker.yaml
+    implementation-worker.yaml
+    audit-worker.yaml
+  templates/
+  schema/
+prompts/
+  orchestrator.md
+  worker-pool.md
+  worker.md
+  auditor.md
+docs/
+.github/
+  ISSUE_TEMPLATE/
+  workflows/
+```
+
+## Quick start
+
+Use the repository as a template or copy Zerion's coordination layer into an existing repository.
+
+Optional local helper:
 
 ```bash
 python -m pip install -e .
 
-# If build isolation cannot reach package indexes:
+# In a network-restricted environment with dependencies already installed:
 # python -m pip install --no-build-isolation -e .
 
-zerion init demo-project \
+zerion init my-project \
   --workers theory implementation audit \
   --repository owner/repository
 
 zerion validate
-zerion status
 ```
 
-New projects use GitHub Issues by default. `--mailboxes` remains only for deprecated PR-mailbox compatibility and requires shell-level GitHub CLI access.
+The CLI writes only stable configuration. It does not maintain live worker state.
 
-## GitHub-native extras
+Then create your ChatGPT orchestrator / worker chats and point them at the repository.
 
-Labels, milestones, assignees, GitHub Projects, reactions, and branch rules can improve navigation and governance, but Zerion does not require them for correctness. This keeps the protocol usable from connected AI runtimes even when some GitHub surfaces are unavailable.
+## Why not store live task state in YAML?
 
-See [GitHub-native integration](docs/github-native.md).
+Earlier Zerion versions maintained a state index in the repository.
+
+Dogfooding showed that this created the wrong abstraction:
+
+- ACKing a task should not require a code commit;
+- Issue comments already have durable ordering and timestamps;
+- a YAML cache could disagree with GitHub;
+- parallel workers could contend on state files;
+- AI runtimes with GitHub connector access may not have shell GitHub access.
+
+v0.5 therefore makes GitHub the single live state machine.
 
 ## Design principles
 
+- **Chats are workers. GitHub is memory.**
 - **AGENTS.md is the bootstrap.**
-- **GitHub is durable state.**
-- **Issues are task/control-plane objects.**
-- **Draft PRs expose work in progress.**
-- **Checks and artifacts are evidence.**
-- **State YAML is an index, not truth by itself.**
-- **Retries must be idempotent.**
-- **Negative and inconclusive results remain preserved.**
+- **Issues are tasks and control-plane histories.**
+- **PRs are work, not mailboxes.**
+- **Actions react to GitHub; ChatGPT workers poll GitHub.**
+- **Projects is a dashboard, not canonical state.**
+- **Stable task IDs make retries safe.**
+- **Evidence beats summaries.**
+- **Negative results stay negative.**
 - **Dormancy is healthy.**
-- **Runtime-specific limits stay outside the core protocol.**
+- **No worker is required for project reconstruction.**
 
 ## Documentation
 
 - [Architecture](docs/architecture.md)
 - [Protocol](docs/protocol.md)
 - [GitHub-native integration](docs/github-native.md)
+- [GitHub Projects](docs/github-projects.md)
+- [ChatGPT scheduled runtime](docs/runtime/chatgpt-scheduled.md)
+- [Manual chat runtime](docs/runtime/manual-chat.md)
 - [Quick start](docs/quickstart.md)
-- [CLI](docs/cli.md)
 - [Failure recovery](docs/failure-recovery.md)
 - [Scaling](docs/scaling.md)
+- [Migrating to v0.5](docs/migration-v0.5.md)
 
 ## License
 

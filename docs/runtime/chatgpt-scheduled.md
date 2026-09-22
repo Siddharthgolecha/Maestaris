@@ -1,15 +1,41 @@
 # ChatGPT scheduled runtime
 
-A ChatGPT scheduled task can act as a Zerion orchestrator or generic worker pool.
+Zerion's primary automation model for ordinary ChatGPT is **scheduled polling**.
 
-Keep runtime-specific timing constraints here rather than in the core protocol. Product limits can change; task IDs, ACK claims, terminal reports, reviews, and repository-first state should remain stable.
+A scheduled chat cannot be assumed to receive GitHub webhooks directly.
 
-Recommended structure:
+## Orchestrator schedule
 
-- one orchestrator schedule;
-- a small number of generic worker-pool schedules;
-- specialist worker identities stored in GitHub configuration;
-- staggered runs when useful;
-- immediate manual execution when the user is present.
+On each run:
 
-Do not create one scheduled task per specialist unless there is a clear operational reason.
+1. read Zerion static config;
+2. search relevant task Issues;
+3. inspect new terminal worker events and evidence;
+4. review/merge/finalize when warranted;
+5. create the next bounded Issues.
+
+## Worker-pool schedule
+
+On each run:
+
+1. read pool membership;
+2. search open Zerion task Issues;
+3. filter by project/worker/pool;
+4. inspect comments for ACK ownership and terminal state;
+5. claim at most the configured number of eligible tasks;
+6. execute bounded work;
+7. report durable results.
+
+## Why polling is safe
+
+Schedules may overlap, retry, or run when nothing is available.
+
+Stable task IDs and ACK leases make repeated polling idempotent.
+
+## What GitHub events do
+
+GitHub events can trigger Actions that validate protocol records, sync labels, run CI, and update dashboard inputs.
+
+They do not directly wake the scheduled/ordinary ChatGPT conversation.
+
+When the user is present, the same worker chat can be invoked immediately instead of waiting for its next scheduled poll.

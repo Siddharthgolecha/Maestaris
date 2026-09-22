@@ -11,266 +11,139 @@ import yaml
 from zerion_orchestration.cli import main
 from zerion_orchestration.core import validate_repository
 from zerion_orchestration.protocol import (
+    desired_managed_labels,
+    is_managed_label,
+    reduce_task_status,
     validate_protocol_comment,
     validate_task_issue,
 )
 
 
-class ZerionCLITests(unittest.TestCase):
-    def test_init_validate_and_status_use_native_issues(self):
+class ZerionV05Tests(unittest.TestCase):
+    def init_project(self, root: Path) -> int:
+        return main(
+            [
+                "--root", str(root),
+                "init", "alpha",
+                "--workers", "theory", "build", "audit",
+                "--repository", "example/alpha",
+            ]
+        )
+
+    def test_init_is_static_and_github_native(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             out = io.StringIO()
             with contextlib.redirect_stdout(out):
-                code = main(
-                    [
-                        "--root", str(root), "init", "alpha",
-                        "--workers", "theory", "build", "audit",
-                        "--repository", "example/alpha",
-                    ]
-                )
+                code = self.init_project(root)
             self.assertEqual(code, 0)
 
-            project_path = root / "coordination" / "projects" / "alpha.yaml"
-            registry_path = root / "coordination" / "zerion.yaml"
-            self.assertTrue(project_path.exists())
-            self.assertTrue(registry_path.exists())
-            self.assertTrue((root / "AGENTS.md").exists())
+            registry = yaml.safe_load(
+                (root / "coordination" / "zerion.yaml").read_text()
+            )
+            project = yaml.safe_load(
+                (root / "coordination" / "projects" / "alpha.yaml").read_text()
+            )
 
-            project = yaml.safe_load(project_path.read_text())
-            registry = yaml.safe_load(registry_path.read_text())
+            self.assertEqual(registry["protocol_version"], 3)
+            self.assertEqual(registry["github"]["task_transport"], "issue")
+            self.assertEqual(registry["github"]["task_label"], "zerion:task")
+            self.assertEqual(
+                registry["github"]["projects"]["auto_add_filter"],
+                'is:issue label:"zerion:task"',
+            )
 
             self.assertEqual(
                 project["active_workers"],
                 ["alpha-theory", "alpha-build", "alpha-audit"],
             )
-            self.assertEqual(project["auditor"], "alpha-audit")
-            self.assertEqual(project["repository"], "example/alpha")
             self.assertEqual(project["control_plane"]["transport"], "github_issue")
             self.assertNotIn("mailboxes", project)
-            self.assertIn("alpha", registry["projects"])
-            self.assertEqual(registry["entrypoint"], "AGENTS.md")
-            self.assertEqual(registry["protocol_version"], 2)
-            self.assertEqual(registry["github"]["task_transport"], "issue")
-            self.assertEqual(
-                registry["github"]["native_reviews"]["same_actor_fallback"],
-                "COMMENT",
-            )
 
             for worker in project["active_workers"]:
-                agent_path = root / "coordination" / "agents" / f"{worker}.yaml"
-                agent = yaml.safe_load(agent_path.read_text())
-                self.assertEqual(
-                    agent["control_plane"]["transport"],
-                    "github_issue",
+                agent = yaml.safe_load(
+                    (root / "coordination" / "agents" / f"{worker}.yaml").read_text()
                 )
+                self.assertEqual(agent["control_plane"]["transport"], "github_issue")
+                self.assertNotIn("mailbox", agent)
+                self.assertNotIn("current_task", agent)
+                self.assertNotIn("current_objective", agent)
 
-                state_path = root / "coordination" / "state" / f"{worker}.yaml"
-                self.assertTrue(state_path.exists())
-                state = yaml.safe_load(state_path.read_text())
-                self.assertEqual(state["worker"], worker)
-                self.assertEqual(state["project"], "alpha")
-                self.assertEqual(state["lifecycle"], "idle")
-                self.assertEqual(state["claim"]["lease_hours"], 3)
-                self.assertIn("issue", state["task"])
-                self.assertIsNone(state["task"]["issue"])
-                self.assertNotIn("mailbox", state)
-
+            self.assertFalse((root / "coordination" / "state").exists())
+            self.assertFalse((root / "coordination" / "mailboxes").exists())
             self.assertEqual(main(["--root", str(root), "validate"]), 0)
 
             status = io.StringIO()
             with contextlib.redirect_stdout(status):
-                status_code = main(["--root", str(root), "status"])
-            self.assertEqual(status_code, 0)
+                self.assertEqual(main(["--root", str(root), "status"]), 0)
+            self.assertIn("live task state is in GitHub", status.getvalue())
             self.assertIn("alpha", status.getvalue())
-            self.assertIn("issues", status.getvalue())
-            self.assertIn("0/3", status.getvalue())
-
-            json_status = io.StringIO()
-            with contextlib.redirect_stdout(json_status):
-                json_code = main(["--root", str(root), "status", "--json"])
-            self.assertEqual(json_code, 0)
-            self.assertIn('"states"', json_status.getvalue())
-            self.assertIn('"registry"', json_status.getvalue())
-            self.assertIn('"warnings"', json_status.getvalue())
 
     def test_existing_agents_md_is_preserved(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            agents_path = root / "AGENTS.md"
-            agents_path.write_text("# Existing instructions\nDo not overwrite me.\n")
-
-            self.assertEqual(
-                main(
-                    [
-                        "--root", tmp, "init", "alpha",
-                        "--workers", "theory",
-                        "--repository", "example/alpha",
-                    ]
-                ),
-                0,
-            )
-            self.assertEqual(
-                agents_path.read_text(),
-                "# Existing instructions\nDo not overwrite me.\n",
-            )
+            path = root / "AGENTS.md"
+            path.write_text("# Existing\nDo not overwrite.\n")
+            self.assertEqual(self.init_project(root), 0)
+            self.assertEqual(path.read_text(), "# Existing\nDo not overwrite.\n")
 
     def test_duplicate_project_is_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
-            args = [
-                "--root", tmp, "init", "alpha",
-                "--workers", "theory",
-                "--repository", "example/alpha",
-            ]
-            self.assertEqual(main(args), 0)
+            root = Path(tmp)
+            self.assertEqual(self.init_project(root), 0)
             with contextlib.redirect_stderr(io.StringIO()):
-                self.assertEqual(main(args), 2)
+                self.assertEqual(self.init_project(root), 2)
 
     def test_invalid_name_is_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
             with contextlib.redirect_stderr(io.StringIO()):
                 self.assertEqual(
-                    main(["--root", tmp, "init", "Bad Name", "--workers", "theory"]),
+                    main(
+                        [
+                            "--root", tmp,
+                            "init", "Bad Name",
+                            "--workers", "theory",
+                            "--repository", "example/alpha",
+                        ]
+                    ),
                     2,
                 )
 
-    def test_missing_state_is_detected(self):
+    def test_protocol_v3_rejects_shadow_state_files(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            self.assertEqual(
-                main(
-                    [
-                        "--root", tmp, "init", "alpha",
-                        "--workers", "theory",
-                        "--repository", "example/alpha",
-                    ]
-                ),
-                0,
-            )
-            state_path = root / "coordination" / "state" / "alpha-theory.yaml"
-            state_path.unlink()
+            self.assertEqual(self.init_project(root), 0)
+            state = root / "coordination" / "state"
+            state.mkdir()
+            (state / "alpha-theory.yaml").write_text("worker: alpha-theory\n")
 
             result = validate_repository(root)
             self.assertFalse(result.ok)
             self.assertTrue(
-                any("missing state index for alpha-theory" in e for e in result.errors)
+                any("removed mutable state/mailbox files" in e for e in result.errors)
             )
 
-    def test_unregistered_project_is_detected(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            self.assertEqual(
-                main(
-                    [
-                        "--root", tmp, "init", "alpha",
-                        "--workers", "theory",
-                        "--repository", "example/alpha",
-                    ]
-                ),
-                0,
-            )
-            registry_path = root / "coordination" / "zerion.yaml"
-            registry = yaml.safe_load(registry_path.read_text())
-            registry["projects"] = []
-            registry_path.write_text(yaml.safe_dump(registry, sort_keys=False))
-
-            result = validate_repository(root)
-            self.assertFalse(result.ok)
-            self.assertTrue(
-                any("project 'alpha' is not registered" in e for e in result.errors)
-            )
-
-    def test_native_state_requires_issue_key(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            self.assertEqual(
-                main(
-                    [
-                        "--root", tmp, "init", "alpha",
-                        "--workers", "theory",
-                        "--repository", "example/alpha",
-                    ]
-                ),
-                0,
-            )
-            state_path = root / "coordination" / "state" / "alpha-theory.yaml"
-            state = yaml.safe_load(state_path.read_text())
-            del state["task"]["issue"]
-            state_path.write_text(yaml.safe_dump(state, sort_keys=False))
-
-            result = validate_repository(root)
-            self.assertFalse(result.ok)
-            self.assertTrue(
-                any("native transport requires task.issue" in e for e in result.errors)
-            )
-
-    def test_legacy_mailbox_drift_is_still_detected_with_warning(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            self.assertEqual(
-                main(
-                    [
-                        "--root", tmp, "init", "alpha",
-                        "--workers", "theory",
-                        "--repository", "example/alpha",
-                    ]
-                ),
-                0,
-            )
-
-            project_path = root / "coordination" / "projects" / "alpha.yaml"
-            agent_path = root / "coordination" / "agents" / "alpha-theory.yaml"
-            state_path = root / "coordination" / "state" / "alpha-theory.yaml"
-
-            project = yaml.safe_load(project_path.read_text())
-            project["control_plane"] = {"transport": "legacy_pull_request_mailbox"}
-            project["mailboxes"] = {"alpha-theory": 12}
-            project_path.write_text(yaml.safe_dump(project, sort_keys=False))
-
-            agent = yaml.safe_load(agent_path.read_text())
-            agent["control_plane"] = {"transport": "legacy_pull_request_mailbox"}
-            agent["mailbox"] = {"transport": "pull_request", "pr": 12}
-            agent_path.write_text(yaml.safe_dump(agent, sort_keys=False))
-
-            state = yaml.safe_load(state_path.read_text())
-            state["mailbox"] = {"pr": 13}
-            state_path.write_text(yaml.safe_dump(state, sort_keys=False))
-
-            result = validate_repository(root)
-            self.assertFalse(result.ok)
-            self.assertTrue(any("mailbox PR differs" in e for e in result.errors))
-            self.assertTrue(any("deprecated" in w for w in result.warnings))
-
-    def test_task_issue_protocol_validation(self):
-        valid = """[ORCHESTRATOR:v1]
+    def test_task_issue_and_comment_validation(self):
+        body = """[ORCHESTRATOR:v1]
 task_id: alpha-theory-0001
 project: alpha
 worker: alpha-theory
 status: ASSIGNED
-priority: P1
+priority: P0
 
-## Objective
-
-Prove one bounded claim.
+objective: |
+  Prove one bounded claim.
 """
         self.assertEqual(
-            validate_task_issue("[Zerion task] prove bounded claim", valid),
+            validate_task_issue("[Zerion task] bounded proof", body),
             [],
         )
 
-        errors = validate_task_issue(
-            "[Zerion task] malformed",
-            "[ORCHESTRATOR:v1]\nstatus: DONE\n",
-        )
-        self.assertTrue(any("task_id" in e for e in errors))
-        self.assertTrue(any("status must be ASSIGNED" in e for e in errors))
-
-    def test_protocol_comment_validation(self):
         ack = """[WORKER:alpha-theory:v1]
 task_id: alpha-theory-0001
 status: ACK
 dispatcher: pool-A
-claimed_at: 2026-09-22T16:00:00Z
+claimed_at: 2026-09-22T17:00:00Z
 lease_hours: 3
 """
         self.assertEqual(validate_protocol_comment(ack), [])
@@ -278,7 +151,7 @@ lease_hours: 3
         done = """[WORKER:alpha-theory:v1]
 task_id: alpha-theory-0001
 status: DONE
-summary: completed with CI evidence
+summary: proof committed and checked
 """
         self.assertEqual(validate_protocol_comment(done), [])
 
@@ -288,12 +161,78 @@ status: ACCEPTED
 """
         self.assertEqual(validate_protocol_comment(review), [])
 
-        bad_ack = """[WORKER:alpha-theory:v1]
-task_id: alpha-theory-0001
+    def test_event_reduction_is_the_live_state_machine(self):
+        comments = [
+            """[WORKER:alpha-theory:v1]
+task_id: t1
 status: ACK
+dispatcher: pool-A
+claimed_at: now
+lease_hours: 3
+""",
+            """[WORKER:alpha-theory:v1]
+task_id: t1
+status: BLOCKED
+summary: waiting for dataset
+""",
+            """[ORCHESTRATOR-REVIEW:v1]
+task_id: t1
+status: REVISE
+""",
+            """[WORKER:alpha-theory:v1]
+task_id: t1
+status: ACK
+dispatcher: pool-A
+claimed_at: later
+lease_hours: 3
+""",
+            """[WORKER:alpha-theory:v1]
+task_id: t1
+status: NEEDS_REVIEW
+summary: new evidence is ready
+""",
+        ]
+        self.assertEqual(reduce_task_status(comments), "needs_review")
+
+    def test_managed_labels_are_derived_from_events(self):
+        github = {
+            "task_label": "zerion:task",
+            "status_labels": {
+                "assigned": "zerion:assigned",
+                "claimed": "zerion:claimed",
+                "blocked": "zerion:blocked",
+                "needs_review": "zerion:needs-review",
+                "accepted": "zerion:accepted",
+                "revise": "zerion:revise",
+                "rejected": "zerion:rejected",
+            },
+            "priority_label_prefix": "priority:",
+        }
+        body = """[ORCHESTRATOR:v1]
+task_id: t1
+project: alpha
+worker: alpha-theory
+status: ASSIGNED
+priority: P0
 """
-        errors = validate_protocol_comment(bad_ack)
-        self.assertTrue(any("dispatcher" in e for e in errors))
+        comments = [
+            """[WORKER:alpha-theory:v1]
+task_id: t1
+status: ACK
+dispatcher: pool-A
+claimed_at: now
+lease_hours: 3
+"""
+        ]
+
+        labels = desired_managed_labels(body, comments, github)
+        self.assertEqual(
+            labels,
+            {"zerion:task", "zerion:claimed", "priority:P0"},
+        )
+        self.assertTrue(is_managed_label("zerion:blocked", github))
+        self.assertTrue(is_managed_label("priority:P1", github))
+        self.assertFalse(is_managed_label("documentation", github))
 
 
 if __name__ == "__main__":

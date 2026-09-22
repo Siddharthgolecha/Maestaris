@@ -1,101 +1,94 @@
 # Zerion operating model
 
-## Agent entry point
+## The two worlds
 
-Root `AGENTS.md` is the normative bootstrap.
-
-```text
-AGENTS.md
-   |
-   v
-coordination/zerion.yaml
-   |
-   +--> projects/<project>.yaml
-   +--> agents/<worker>.yaml
-   +--> state/<worker>.yaml
-                         |
-                         v
-                  GitHub task Issue
-                         |
-                         v
-                  draft/task PR
-                         |
-                         v
-               checks + durable evidence
-```
-
-## Native GitHub mapping
-
-Zerion maps its protocol onto GitHub primitives rather than recreating them.
-
-| Zerion concept | GitHub primitive |
-| --- | --- |
-| bounded task | Issue |
-| task conversation / audit log | Issue comments |
-| work in progress | Draft pull request |
-| substantive repository result | Pull request / commit |
-| verification | Actions / checks / artifacts |
-| review UX | Pull request review |
-| accepted terminal task | Issue closed as completed |
-| rejected task | Issue closed as not planned |
-| project/release grouping | optional milestone / GitHub Project |
-
-Labels, milestones, Projects, assignees, and reactions may improve navigation but are not required for protocol correctness.
-
-## Durable layers
-
-### Configuration
-
-`coordination/zerion.yaml`, project files, and agent files define topology and policy.
-
-### Current-state index
-
-`coordination/state/<worker>.yaml` summarizes the latest known task. For native transport, `task.issue` points to the control-plane Issue.
-
-### Control-plane history
-
-The GitHub task Issue body/comments record assignment, claim, terminal report, and orchestrator review.
-
-### Substantive evidence
-
-Linked task PRs, commits, CI/checks, formal verification, experiments, and artifacts establish what actually happened.
-
-## Lifecycle
+Zerion deliberately separates **reasoning runtime** from **durable coordination**.
 
 ```text
-Issue opened / ASSIGNED
+ChatGPT
+  reasons, plans, writes, reviews
         |
+        | polls / writes
         v
-ACK comment / claimed
-        |
-        v
-draft task PR + work
-        |
-        v
-DONE | BLOCKED | NEEDS_REVIEW
-        |
-        v
-orchestrator evidence review
-        |
-        +--> ACCEPTED -> complete/merge -> close Issue completed
-        +--> REVISE   -> keep Issue open
-        +--> REJECTED -> close Issue not planned
+GitHub
+  Issues, comments, PRs, checks, artifacts
+  durable project state
 ```
 
-## Native PR reviews
+An ordinary ChatGPT conversation is not a GitHub webhook target.
 
-When a task PR exists, the orchestrator may also submit a native GitHub review. This improves GitHub UX but does not replace the Issue-side `[ORCHESTRATOR-REVIEW:v1]` protocol event.
+GitHub can immediately trigger Actions when an Issue or comment changes, but a normal ChatGPT worker runs only when the user invokes it or its ChatGPT schedule fires.
 
-## Idempotency and ACK leases
+## Static repository configuration
 
-Every task has a stable `task_id`. ACK comments include a dispatcher, timestamp, and lease duration.
+`AGENTS.md`, `coordination/zerion.yaml`, project YAML, and agent YAML describe how the system is organized.
 
-A worker skips a task when a terminal result already exists or another unexpired ACK owns it.
+They change when the architecture of the project changes, not every time a task changes state.
 
-## Legacy transport
+## Live state
 
-`legacy_pull_request_mailbox` remains valid for older repositories. It is a compatibility path, not the v0.4 default.
+Live state is reconstructed from the GitHub task Issue.
+
+```text
+Issue body = ASSIGNED
+comment ACK = claimed
+comment BLOCKED = blocked
+comment DONE / NEEDS_REVIEW = needs review
+comment ACCEPTED = accepted
+comment REVISE = revise
+comment REJECTED = rejected
+```
+
+There is no second mutable YAML state machine.
+
+## Work plane
+
+Substantive repository work goes into a normal task branch and linked PR.
+
+Open a draft PR early when useful for visibility.
+
+A draft PR is **not** a mailbox and does not wake ChatGPT.
+
+## Mechanical automation
+
+GitHub Actions may:
+
+- validate structured protocol records;
+- derive status/priority labels;
+- run tests and formal verification;
+- produce artifacts;
+- support Projects dashboards.
+
+Actions should not make scientific or project-management judgments that belong to an orchestrator unless explicitly designed to do so.
+
+## Projects
+
+GitHub Projects is a derived mission board.
+
+The recommended auto-add filter is:
+
+```text
+is:issue label:"zerion:task"
+```
+
+Built-in Project automation can mark added items Todo and closed Issues Done.
+
+Zerion status labels provide richer views such as claimed, blocked, and needs review.
+
+## Polling and idempotency
+
+Because worker chats poll, duplicate invocation is normal.
+
+Safe polling requires:
+
+- stable task IDs;
+- ACK leases;
+- checking comments before claiming work;
+- checking terminal reports and reviews before acting;
+- dependency checks.
 
 ## Dormancy
 
-Workers may be dormant when no useful work is unblocked. Zerion optimizes critical-path progress, not agent activity.
+A worker with no useful unblocked task should remain idle/dormant.
+
+Zerion optimizes useful progress, not activity.

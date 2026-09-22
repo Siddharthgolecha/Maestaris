@@ -1,43 +1,30 @@
 # Zerion CLI
 
-The CLI is optional setup and maintenance tooling. AI agents can operate Zerion directly through a connected GitHub interface.
+The CLI is optional and intentionally small.
+
+AI workers do not need it to operate Zerion.
 
 ## Install
-
-Normal editable install:
 
 ```bash
 python -m pip install -e .
 ```
 
-In a network-restricted environment where build dependencies are already installed, avoid pip build isolation:
+In a restricted environment with dependencies already available:
 
 ```bash
 python -m pip install --no-build-isolation -e .
 ```
 
-This distinction matters for agent sandboxes: a connected GitHub interface may work even when the shell cannot reach package indexes or github.com.
-
-The core AI protocol does not require CLI installation.
-
-## Initialize
+## Initialize static configuration
 
 ```bash
-zerion init quantum-compression \
+zerion init my-project \
   --workers theory implementation audit \
   --repository owner/repository
 ```
 
-This creates an Issue-native project, namespaced agent entries, worker state indexes, global registration, and root `AGENTS.md` only when absent.
-
-The default path does **not** require `gh`.
-
-## Status
-
-```bash
-zerion status
-zerion status --json
-```
+If `--repository` is omitted, Zerion tries to infer the GitHub repository from the local `origin` URL without contacting GitHub.
 
 ## Validate
 
@@ -45,16 +32,12 @@ zerion status --json
 zerion validate
 ```
 
-## Legacy mailbox compatibility
+Validation covers static protocol topology. Live task correctness is validated through GitHub Issue/comment workflows.
+
+## Status
 
 ```bash
-zerion init old-project --workers theory audit --mailboxes
+zerion status
 ```
 
-or:
-
-```bash
-zerion mailboxes create old-project
-```
-
-These commands require authenticated GitHub CLI and are deprecated. They exist only for older PR-mailbox deployments.
+This reports static project registration only and explicitly points users to GitHub for live task state.

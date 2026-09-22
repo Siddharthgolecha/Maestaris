@@ -3,23 +3,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 import re
+import subprocess
 from typing import Any
 
 import yaml
 
 NAME_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 PROJECT_STATES = {"active", "waiting", "dormant", "completed"}
-AGENT_STATES = {"active", "assigned", "blocked", "waiting", "dormant", "completed"}
-WORKER_LIFECYCLES = {
-    "idle",
-    "assigned",
-    "claimed",
-    "done",
-    "blocked",
-    "needs_review",
-    "dormant",
-}
-CONTROL_PLANE_TRANSPORTS = {"github_issue", "legacy_pull_request_mailbox"}
+AGENT_STATES = {"active", "blocked", "waiting", "dormant", "completed"}
 
 
 @dataclass
@@ -27,7 +18,6 @@ class ValidationResult:
     registry: dict[str, Any]
     projects: dict[str, dict[str, Any]]
     agents: dict[str, dict[str, Any]]
-    states: dict[str, dict[str, Any]]
     errors: list[str]
     warnings: list[str]
 
@@ -36,18 +26,8 @@ class ValidationResult:
         return not self.errors
 
 
-def coordination_paths(root: Path) -> tuple[Path, Path]:
-    base = root / "coordination"
-    return base / "projects", base / "agents"
-
-
 def ensure_layout(root: Path) -> None:
-    for rel in (
-        "coordination/projects",
-        "coordination/agents",
-        "coordination/state",
-        "coordination/mailboxes",
-    ):
+    for rel in ("coordination/projects", "coordination/agents"):
         (root / rel).mkdir(parents=True, exist_ok=True)
 
 
@@ -74,21 +54,17 @@ def validate_name(value: str, label: str = "name") -> None:
         )
 
 
-DEFAULT_AGENTS_MD = """# Agent operating instructions
+DEFAULT_AGENTS_MD = """# Zerion agent operating instructions
 
-This repository uses Zerion's repository-first orchestration protocol.
+This repository uses Zerion's GitHub-native orchestration protocol.
 
-Start with `coordination/zerion.yaml`, resolve the project and worker, then read the project registry, agent configuration, worker state index, current GitHub task Issue, canonical project paths, and actual task evidence.
+Read `coordination/zerion.yaml`, the relevant project and agent configuration, then discover live work from GitHub task Issues. Do not expect mutable worker-state YAML: Issues, comments, pull requests, checks, and artifacts are the live system of record.
 
 Repository/GitHub evidence is authoritative over chat memory.
 
-For the preferred GitHub-native transport, a task Issue is the control-plane object. ACKs, worker terminal reports, and orchestrator review events are comments on that Issue. Substantive work belongs in a linked task branch and draft pull request. CI/checks, commits, proofs, experiments, and artifacts are the evidence.
+For ordinary ChatGPT conversations, GitHub events do not wake the chat. Scheduled or manual workers poll GitHub, then use Issues for assignments/ACK/results and linked pull requests for substantive repository work.
 
-`coordination/state/<worker>.yaml` is only a fast index. If it disagrees with newer Issue/PR evidence, use the newer durable evidence and repair the index.
-
-Legacy PR-backed mailboxes may still exist in older Zerion projects. Treat them as compatibility transport, not the preferred model.
-
-Preserve stable task IDs, ACK ownership, negative results, and idempotency under retries.
+Start from the root AGENTS.md in this repository for the complete bootstrap.
 """
 
 
@@ -103,28 +79,38 @@ def ensure_agents_entrypoint(root: Path) -> bool:
 def build_registry() -> dict[str, Any]:
     return {
         "schema": 1,
-        "protocol_version": 2,
+        "protocol_version": 3,
         "entrypoint": "AGENTS.md",
         "canonical_branch": "main",
         "orchestrator": "orchestrator",
         "defaults": {"ack_lease_hours": 3},
         "github": {
             "task_transport": "issue",
-            "task_issue": {
-                "title_prefix": "[Zerion task]",
-                "accepted_state_reason": "completed",
-                "rejected_state_reason": "not_planned",
+            "task_title_prefix": "[Zerion task]",
+            "task_label": "zerion:task",
+            "status_labels": {
+                "assigned": "zerion:assigned",
+                "claimed": "zerion:claimed",
+                "blocked": "zerion:blocked",
+                "needs_review": "zerion:needs-review",
+                "accepted": "zerion:accepted",
+                "revise": "zerion:revise",
+                "rejected": "zerion:rejected",
             },
+            "priority_label_prefix": "priority:",
             "task_pull_request": {
                 "draft_on_start": True,
                 "branch_prefix": "zerion/task",
                 "link_keyword": "Resolves",
             },
             "native_reviews": {
-                "enabled": True,
                 "accepted": "APPROVE",
                 "revise": "REQUEST_CHANGES",
                 "same_actor_fallback": "COMMENT",
+            },
+            "projects": {
+                "optional": True,
+                "auto_add_filter": 'is:issue label:"zerion:task"',
             },
         },
         "pools": {
@@ -135,72 +121,72 @@ def build_registry() -> dict[str, Any]:
     }
 
 
-def build_state(worker: str, project: str, lease_hours: int = 3) -> dict[str, Any]:
-    return {
-        "schema": 1,
-        "worker": worker,
-        "project": project,
-        "lifecycle": "idle",
-        "task": {
-            "id": None,
-            "issue": None,
-            "status": None,
-            "priority": None,
-            "task_pr": None,
-        },
-        "claim": {
-            "dispatcher": None,
-            "claimed_at": None,
-            "lease_hours": lease_hours,
-        },
-        "result": {
-            "status": None,
-            "commit": None,
-            "task_pr": None,
-        },
-        "last_review": {
-            "task_id": None,
-            "status": None,
-            "reviewed_at": None,
-        },
-        "updated_at": None,
-    }
+def infer_repository_from_git(root: Path) -> str:
+    try:
+        proc = subprocess.run(
+            ["git", "config", "--get", "remote.origin.url"],
+            cwd=root,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+    except OSError:
+        return "owner/repository"
+
+    if proc.returncode:
+        return "owner/repository"
+
+    url = proc.stdout.strip()
+    patterns = (
+        r"https?://github\.com/([^/]+/[^/]+?)(?:\.git)?$",
+        r"git@github\.com:([^/]+/[^/]+?)(?:\.git)?$",
+        r"ssh://git@github\.com/([^/]+/[^/]+?)(?:\.git)?$",
+    )
+    for pattern in patterns:
+        match = re.match(pattern, url)
+        if match:
+            return match.group(1)
+    return "owner/repository"
 
 
-def _project_transport(project: dict[str, Any]) -> str | None:
-    control_plane = project.get("control_plane")
-    if isinstance(control_plane, dict) and control_plane.get("transport"):
-        return str(control_plane["transport"])
-    if "mailboxes" in project:
-        return "legacy_pull_request_mailbox"
-    return None
-
-
-def _agent_transport(agent: dict[str, Any]) -> str | None:
-    control_plane = agent.get("control_plane")
-    if isinstance(control_plane, dict) and control_plane.get("transport"):
-        return str(control_plane["transport"])
-    if "mailbox" in agent:
-        return "legacy_pull_request_mailbox"
-    return None
+def _legacy_files(root: Path) -> list[Path]:
+    found: list[Path] = []
+    for rel in ("coordination/state", "coordination/mailboxes"):
+        path = root / rel
+        if path.exists():
+            found.extend(p for p in path.rglob("*") if p.is_file())
+    for rel in (
+        "coordination/schema/state.schema.json",
+        "coordination/templates/STATE_TEMPLATE.yaml",
+    ):
+        path = root / rel
+        if path.exists():
+            found.append(path)
+    return found
 
 
 def validate_repository(root: Path) -> ValidationResult:
-    projects_dir, agents_dir = coordination_paths(root)
     base = root / "coordination"
-    state_dir = base / "state"
     registry_path = base / "zerion.yaml"
+    projects_dir = base / "projects"
+    agents_dir = base / "agents"
 
     errors: list[str] = []
     warnings: list[str] = []
     registry: dict[str, Any] = {}
     projects: dict[str, dict[str, Any]] = {}
     agents: dict[str, dict[str, Any]] = {}
-    states: dict[str, dict[str, Any]] = {}
 
-    agents_entrypoint = root / "AGENTS.md"
-    if not agents_entrypoint.exists():
-        errors.append(f"{agents_entrypoint}: missing agent entry point")
+    if not (root / "AGENTS.md").exists():
+        errors.append(f"{root / 'AGENTS.md'}: missing agent entry point")
+
+    legacy = _legacy_files(root)
+    if legacy:
+        sample = ", ".join(str(p.relative_to(root)) for p in legacy[:4])
+        errors.append(
+            "protocol v3 removed mutable state/mailbox files; migrate or delete: "
+            + sample
+        )
 
     if not registry_path.exists():
         errors.append(f"{registry_path}: missing Zerion registry")
@@ -213,47 +199,49 @@ def validate_repository(root: Path) -> ValidationResult:
     if registry:
         if registry.get("schema") != 1:
             errors.append(f"{registry_path}: schema must be 1")
+        if registry.get("protocol_version") != 3:
+            errors.append(f"{registry_path}: protocol_version must be 3")
         if registry.get("entrypoint") != "AGENTS.md":
             errors.append(f"{registry_path}: entrypoint must be AGENTS.md")
-        protocol_version = registry.get("protocol_version")
-        if not isinstance(protocol_version, int):
-            errors.append(f"{registry_path}: protocol_version must be an integer")
-        elif protocol_version < 1:
-            errors.append(f"{registry_path}: protocol_version must be >= 1")
 
         defaults = registry.get("defaults") or {}
         lease = defaults.get("ack_lease_hours")
         if not isinstance(lease, int) or lease < 1:
             errors.append(f"{registry_path}: defaults.ack_lease_hours must be >= 1")
 
+        github = registry.get("github")
+        if not isinstance(github, dict):
+            errors.append(f"{registry_path}: github configuration is required")
+        else:
+            if github.get("task_transport") != "issue":
+                errors.append(f"{registry_path}: github.task_transport must be issue")
+            for key in ("task_title_prefix", "task_label", "priority_label_prefix"):
+                if not github.get(key):
+                    errors.append(f"{registry_path}: github.{key} is required")
+            status_labels = github.get("status_labels")
+            required_statuses = {
+                "assigned", "claimed", "blocked", "needs_review",
+                "accepted", "revise", "rejected"
+            }
+            if not isinstance(status_labels, dict):
+                errors.append(f"{registry_path}: github.status_labels must be a mapping")
+            elif set(status_labels) != required_statuses:
+                errors.append(
+                    f"{registry_path}: github.status_labels must define "
+                    + ", ".join(sorted(required_statuses))
+                )
+
         pools = registry.get("pools")
         if not isinstance(pools, dict) or not pools:
             errors.append(f"{registry_path}: pools must be a non-empty mapping")
 
-        registered_projects = registry.get("projects")
-        if not isinstance(registered_projects, list):
+        if not isinstance(registry.get("projects"), list):
             errors.append(f"{registry_path}: projects must be a list")
-
-        if isinstance(protocol_version, int) and protocol_version >= 2:
-            github = registry.get("github")
-            if not isinstance(github, dict):
-                errors.append(f"{registry_path}: protocol v2 requires github configuration")
-            else:
-                if github.get("task_transport") != "issue":
-                    errors.append(f"{registry_path}: github.task_transport must be 'issue'")
-                task_issue = github.get("task_issue") or {}
-                if not task_issue.get("title_prefix"):
-                    errors.append(f"{registry_path}: github.task_issue.title_prefix is required")
-                task_pr = github.get("task_pull_request") or {}
-                if not task_pr.get("branch_prefix"):
-                    errors.append(f"{registry_path}: github.task_pull_request.branch_prefix is required")
 
     if not projects_dir.exists():
         errors.append(f"{projects_dir}: missing project registry")
     if not agents_dir.exists():
         errors.append(f"{agents_dir}: missing agent registry")
-    if not state_dir.exists():
-        errors.append(f"{state_dir}: missing state index")
 
     for path in sorted(projects_dir.glob("*.yaml")) if projects_dir.exists() else []:
         try:
@@ -265,26 +253,21 @@ def validate_repository(root: Path) -> ValidationResult:
         if not name:
             errors.append(f"{path}: missing project")
             continue
-        projects[str(name)] = data
+        name = str(name)
+        projects[name] = data
         if data.get("schema") != 1:
             errors.append(f"{path}: schema must be 1")
         if data.get("status") not in PROJECT_STATES:
             errors.append(f"{path}: invalid project status {data.get('status')!r}")
         try:
-            validate_name(str(name), "project")
+            validate_name(name, "project")
         except ValueError as exc:
             errors.append(f"{path}: {exc}")
-
-        transport = _project_transport(data)
-        if transport not in CONTROL_PLANE_TRANSPORTS:
-            errors.append(
-                f"{path}: control-plane transport must be one of "
-                f"{sorted(CONTROL_PLANE_TRANSPORTS)}"
-            )
-        elif transport == "legacy_pull_request_mailbox":
-            warnings.append(
-                f"{path}: legacy PR-mailbox transport is deprecated; prefer github_issue"
-            )
+        control = data.get("control_plane") or {}
+        if control.get("transport") != "github_issue":
+            errors.append(f"{path}: control_plane.transport must be github_issue")
+        if "mailboxes" in data:
+            errors.append(f"{path}: mailboxes were removed in protocol v3")
 
     for path in sorted(agents_dir.glob("*.yaml")) if agents_dir.exists() else []:
         try:
@@ -310,65 +293,12 @@ def validate_repository(root: Path) -> ValidationResult:
         project = data.get("project")
         if project != "*" and project not in projects:
             errors.append(f"{path}: unknown project {project!r}")
-
         if project != "*":
-            transport = _agent_transport(data)
-            if transport not in CONTROL_PLANE_TRANSPORTS:
-                errors.append(
-                    f"{path}: control-plane transport must be one of "
-                    f"{sorted(CONTROL_PLANE_TRANSPORTS)}"
-                )
-            elif transport == "legacy_pull_request_mailbox":
-                warnings.append(
-                    f"{path}: legacy PR-mailbox transport is deprecated; prefer github_issue"
-                )
-
-    for path in sorted(state_dir.glob("*.yaml")) if state_dir.exists() else []:
-        try:
-            data = load_yaml(path)
-        except Exception as exc:
-            errors.append(str(exc))
-            continue
-        worker = data.get("worker")
-        if not worker:
-            errors.append(f"{path}: missing worker")
-            continue
-        worker = str(worker)
-        states[worker] = data
-
-        if path.stem != worker:
-            errors.append(f"{path}: filename must match worker {worker!r}")
-        if data.get("schema") != 1:
-            errors.append(f"{path}: schema must be 1")
-        if data.get("lifecycle") not in WORKER_LIFECYCLES:
-            errors.append(f"{path}: invalid lifecycle {data.get('lifecycle')!r}")
-        if worker not in agents:
-            errors.append(f"{path}: unknown worker {worker!r}")
-
-        project = data.get("project")
-        if project not in projects:
-            errors.append(f"{path}: unknown project {project!r}")
-        elif worker in agents and agents[worker].get("project") != project:
-            errors.append(
-                f"{path}: project {project!r} does not match agent project "
-                f"{agents[worker].get('project')!r}"
-            )
-
-        task = data.get("task")
-        if not isinstance(task, dict):
-            errors.append(f"{path}: task must be a mapping")
-        else:
-            for key in ("id", "status", "priority", "task_pr"):
-                if key not in task:
-                    errors.append(f"{path}: task.{key} is required")
-
-        claim = data.get("claim") or {}
-        if not isinstance(claim, dict):
-            errors.append(f"{path}: claim must be a mapping")
-        else:
-            lease = claim.get("lease_hours")
-            if not isinstance(lease, int) or lease < 1:
-                errors.append(f"{path}: claim.lease_hours must be >= 1")
+            control = data.get("control_plane") or {}
+            if control.get("transport") != "github_issue":
+                errors.append(f"{path}: control_plane.transport must be github_issue")
+        if "mailbox" in data or "current_task" in data or "current_objective" in data:
+            errors.append(f"{path}: mutable mailbox/task fields were removed in protocol v3")
 
     if registry:
         listed = set(map(str, registry.get("projects") or []))
@@ -398,7 +328,6 @@ def validate_repository(root: Path) -> ValidationResult:
         if not isinstance(active, list) or not isinstance(dormant, list):
             errors.append(f"project {project_name}: worker lists must be arrays")
             continue
-
         named = set(map(str, active)) | set(map(str, dormant))
         required_workers |= named
         missing = sorted(named - set(agents))
@@ -407,75 +336,24 @@ def validate_repository(root: Path) -> ValidationResult:
                 f"project {project_name}: unregistered workers: {', '.join(missing)}"
             )
 
-        transport = _project_transport(project)
-
-        if transport == "legacy_pull_request_mailbox":
-            mailboxes = project.get("mailboxes") or {}
-            if not isinstance(mailboxes, dict):
-                errors.append(f"project {project_name}: mailboxes must be a mapping")
-                mailboxes = {}
-            unknown = sorted(set(map(str, mailboxes)) - named)
-            if unknown:
-                errors.append(
-                    f"project {project_name}: mailboxes for unknown workers: "
-                    f"{', '.join(unknown)}"
-                )
-
-        for worker in named:
-            if worker not in states:
-                errors.append(f"project {project_name}: missing state index for {worker}")
-                continue
-
-            agent = agents.get(worker) or {}
-            agent_transport = _agent_transport(agent)
-            if agent_transport != transport:
-                errors.append(
-                    f"worker {worker}: agent transport {agent_transport!r} "
-                    f"does not match project transport {transport!r}"
-                )
-
-            state = states[worker]
-            task = state.get("task") or {}
-
-            if transport == "github_issue":
-                if "issue" not in task:
-                    errors.append(f"worker {worker}: native transport requires task.issue")
-                issue = task.get("issue")
-                if issue is not None and (not isinstance(issue, int) or issue < 1):
-                    errors.append(f"worker {worker}: task.issue must be a positive integer or null")
-            elif transport == "legacy_pull_request_mailbox":
-                mailboxes = project.get("mailboxes") or {}
-                project_pr = mailboxes.get(worker)
-                agent_pr = (agent.get("mailbox") or {}).get("pr")
-                state_pr = (state.get("mailbox") or {}).get("pr")
-                configured = [
-                    value for value in (project_pr, agent_pr, state_pr)
-                    if value is not None
-                ]
-                if configured and any(value != configured[0] for value in configured[1:]):
-                    errors.append(
-                        f"worker {worker}: mailbox PR differs across "
-                        "project/agent/state registry"
-                    )
-
-    for worker in sorted(set(states) - required_workers):
-        errors.append(f"state {worker}: worker is not listed by any project")
+    extra = sorted(
+        name for name, agent in agents.items()
+        if agent.get("project") != "*" and name not in required_workers
+    )
+    for name in extra:
+        warnings.append(f"agent {name}: not listed by its project")
 
     return ValidationResult(
         registry=registry,
         projects=projects,
         agents=agents,
-        states=states,
         errors=errors,
         warnings=warnings,
     )
 
 
 def infer_auditor(worker_ids: list[str]) -> str | None:
-    for worker in worker_ids:
-        if "audit" in worker:
-            return worker
-    return None
+    return next((worker for worker in worker_ids if "audit" in worker), None)
 
 
 def build_project(
@@ -511,8 +389,6 @@ def build_agent(worker: str, project: str, role: str, pool: str) -> dict[str, An
         "status": "active",
         "control_plane": {"transport": "github_issue"},
         "project_paths": ["."],
-        "current_task": None,
-        "current_objective": None,
     }
 
 
@@ -524,11 +400,5 @@ def build_orchestrator() -> dict[str, Any]:
         "role": "project-orchestration",
         "dispatcher_pool": "none",
         "status": "active",
-        "project_paths": [
-            "coordination/projects",
-            "coordination/agents",
-            "coordination/state",
-        ],
-        "current_task": None,
-        "current_objective": None,
+        "project_paths": ["coordination/projects", "coordination/agents"],
     }

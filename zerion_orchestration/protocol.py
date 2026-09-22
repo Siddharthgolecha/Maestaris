@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from typing import Iterable
 
 TASK_TITLE_PREFIX = "[Zerion task]"
 WORKER_TERMINAL = {"DONE", "BLOCKED", "NEEDS_REVIEW"}
@@ -16,11 +17,11 @@ def protocol_fields(body: str) -> dict[str, str]:
     }
 
 
-def validate_task_issue(title: str, body: str) -> list[str]:
+def validate_task_issue(title: str, body: str, title_prefix: str = TASK_TITLE_PREFIX) -> list[str]:
     errors: list[str] = []
     body = body or ""
 
-    if not title.startswith(TASK_TITLE_PREFIX):
+    if not title.startswith(title_prefix):
         return errors
 
     if not body.lstrip().startswith("[ORCHESTRATOR:v1]"):
@@ -81,3 +82,58 @@ def validate_protocol_comment(body: str) -> list[str]:
         return errors
 
     return []
+
+
+def reduce_task_status(comments: Iterable[str]) -> str:
+    status = "assigned"
+    for raw in comments:
+        body = (raw or "").strip()
+        fields = protocol_fields(body)
+
+        if body.startswith("[WORKER:"):
+            event = fields.get("status")
+            if event == "ACK":
+                status = "claimed"
+            elif event == "BLOCKED":
+                status = "blocked"
+            elif event in {"DONE", "NEEDS_REVIEW"}:
+                status = "needs_review"
+
+        elif body.startswith("[ORCHESTRATOR-REVIEW:v1]"):
+            event = fields.get("status")
+            if event == "ACCEPTED":
+                status = "accepted"
+            elif event == "REVISE":
+                status = "revise"
+            elif event == "REJECTED":
+                status = "rejected"
+
+    return status
+
+
+def desired_managed_labels(
+    issue_body: str,
+    comments: Iterable[str],
+    github_config: dict,
+) -> set[str]:
+    fields = protocol_fields(issue_body)
+    labels = {str(github_config["task_label"])}
+
+    status = reduce_task_status(comments)
+    status_labels = github_config["status_labels"]
+    labels.add(str(status_labels[status]))
+
+    priority = fields.get("priority")
+    if priority:
+        labels.add(f"{github_config['priority_label_prefix']}{priority}")
+
+    return labels
+
+
+def is_managed_label(label: str, github_config: dict) -> bool:
+    if label == github_config.get("task_label"):
+        return True
+    if label in set((github_config.get("status_labels") or {}).values()):
+        return True
+    prefix = str(github_config.get("priority_label_prefix") or "")
+    return bool(prefix and label.startswith(prefix))

@@ -4,14 +4,16 @@ Act as the project's Zerion auditor and follow root `AGENTS.md`.
 
 Audit:
 
-- project/agent/state configuration;
+- static project/agent configuration;
 - open and recently closed Zerion task Issues;
-- ACK leases and terminal Issue comments;
+- ACK leases and protocol comment order;
 - linked draft/ready/merged PRs;
-- native PR reviews;
-- CI/checks and artifacts;
-- canonical project documents.
+- Actions/checks/artifacts;
+- canonical project documents;
+- derived labels and optional Projects views.
 
-Look for state-index drift, orphaned task Issues, unlinked PRs, stale ACKs, unsupported claim upgrades, dependency drift, lost negative results, missing provenance, and mismatches between Issue summaries and durable evidence.
+Look for orphaned Issues, unlinked PRs, stale ACKs, duplicate work, unsupported claim upgrades, dependency drift, lost negative results, missing provenance, and labels/Projects views that disagree with Issue history.
 
-Do not invent conclusions merely to make state consistent. Prefer the smallest durable correction.
+Issue/comment/PR evidence is canonical. Labels and GitHub Projects are derived.
+
+Do not invent conclusions merely to make the dashboard look consistent.

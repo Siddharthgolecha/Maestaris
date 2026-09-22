@@ -1,38 +1,55 @@
 # Quick start
 
-## AI agent
+## 1. Put Zerion in the repository
 
-Start with root `AGENTS.md`.
+Use this repository as a template or copy its `AGENTS.md`, `coordination/`, `prompts/`, and relevant `.github/` files.
 
-Read the global registry, project, agent, state index, and current GitHub task Issue before acting.
-
-No CLI invocation is required.
-
-## Repository setup
+Optional helper:
 
 ```bash
 python -m pip install -e .
-
 zerion init my-project \
   --workers theory implementation audit \
   --repository owner/repository
-```
-
-The generated project uses `github_issue` control-plane transport.
-
-## Create work
-
-Use the Zerion task Issue template in GitHub or create an Issue programmatically with the `[ORCHESTRATOR:v1]` assignment body.
-
-A worker ACKs in the Issue, then opens a linked draft PR for repository changes.
-
-## Validate
-
-```bash
 zerion validate
-zerion status
 ```
 
-## Legacy repositories
+The CLI creates static configuration only.
 
-PR-backed mailboxes remain supported. `zerion init --mailboxes` is a deprecated compatibility path and requires authenticated `gh` shell access.
+## 2. Create ChatGPT roles
+
+A common topology is:
+
+- one orchestrator chat;
+- one or two scheduled worker-pool chats;
+- specialist identities defined in `coordination/agents/`.
+
+The same scheduled pool can service multiple specialist identities.
+
+## 3. Point chats at GitHub
+
+Tell a fresh conversation to read `AGENTS.md` and operate Zerion on the repository.
+
+Workers discover live work from GitHub Issues rather than chat memory.
+
+## 4. Create tasks
+
+Create a structured `[Zerion task]` Issue.
+
+The worker ACKs in a comment, performs the bounded work, links a draft PR when appropriate, and posts its terminal result on the Issue.
+
+## 5. Let Actions handle mechanics
+
+The shipped workflow validates protocol records and derives labels from the Issue history.
+
+## 6. Optional GitHub Project
+
+Create a Project and configure Auto-add with:
+
+```text
+is:issue label:"zerion:task"
+```
+
+Use labels for Blocked, Needs review, Claimed, and Priority views.
+
+See `docs/github-projects.md`.
