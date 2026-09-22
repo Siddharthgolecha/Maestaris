@@ -1,0 +1,16 @@
+schema: 1
+agent: audit-worker
+project: example-project
+role: consistency-and-evidence-audit
+dispatcher_pool: A
+status: active
+
+mailbox:
+  transport: pull_request
+  pr: null
+
+project_paths:
+  - examples/research-demo
+
+current_task: null
+current_objective: null
