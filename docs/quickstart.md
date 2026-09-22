@@ -1,66 +1,38 @@
 # Quick start
 
-## For an AI agent
+## AI agent
 
-Start with the repository's root `AGENTS.md`.
+Start with root `AGENTS.md`.
 
-Do not begin by trusting chat history. Follow its bootstrap sequence to read:
+Read the global registry, project, agent, state index, and current GitHub task Issue before acting.
 
-1. `coordination/zerion.yaml`;
-2. the relevant project;
-3. agent and worker-state configuration;
-4. the mailbox PR;
-5. canonical project files;
-6. actual task evidence.
+No CLI invocation is required.
 
-No CLI invocation is required for agent operation.
-
-## For repository setup
-
-Install Zerion locally:
+## Repository setup
 
 ```bash
 python -m pip install -e .
-```
 
-Initialize a project:
-
-```bash
 zerion init my-project \
   --workers theory implementation audit \
   --repository owner/repository
 ```
 
-This registers the project globally, creates namespaced agent entries, and creates one current-state index per worker.
+The generated project uses `github_issue` control-plane transport.
 
-## Optional mailbox creation
+## Create work
 
-With authenticated GitHub CLI:
+Use the Zerion task Issue template in GitHub or create an Issue programmatically with the `[ORCHESTRATOR:v1]` assignment body.
 
-```bash
-zerion mailboxes create my-project --commit
-```
-
-This creates one long-lived draft mailbox PR per worker and synchronizes the PR number across project, agent, and state registries.
-
-Do not merge mailbox PRs and do not put substantive work on mailbox branches.
-
-## Assign a bounded task
-
-Post an `[ORCHESTRATOR:v1]` message using the assignment template and synchronize the worker state index to `assigned`.
-
-## Run a worker
-
-A worker pool uses the state index to find candidates, verifies the real mailbox state, posts ACK, updates state to `claimed`, reads canonical paths, creates a task PR, performs and verifies work, then posts a terminal result and synchronizes state.
-
-## Review
-
-The orchestrator inspects the actual task PR, commit, CI, proof, experiment, or artifact before accepting the result.
+A worker ACKs in the Issue, then opens a linked draft PR for repository changes.
 
 ## Validate
 
 ```bash
 zerion validate
+zerion status
 ```
 
-Validation checks the global registry, projects, agents, worker-state coverage, pool references, and mailbox-reference consistency.
+## Legacy repositories
+
+PR-backed mailboxes remain supported. `zerion init --mailboxes` is a deprecated compatibility path and requires authenticated `gh` shell access.
