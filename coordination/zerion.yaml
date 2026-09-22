@@ -21,6 +21,7 @@ github:
     enabled: true
     accepted: APPROVE
     revise: REQUEST_CHANGES
+    same_actor_fallback: COMMENT
 
 pools:
   A:
