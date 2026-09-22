@@ -1,5 +1,5 @@
 schema: 1
-protocol_version: 3
+protocol_version: 4
 entrypoint: AGENTS.md
 canonical_branch: main
 orchestrator: orchestrator
@@ -12,7 +12,7 @@ github:
   task_title_prefix: "[Zerion task]"
   task_label: "zerion:task"
   status_labels:
-    assigned: "zerion:assigned"
+    ready: "zerion:ready"
     claimed: "zerion:claimed"
     blocked: "zerion:blocked"
     needs_review: "zerion:needs-review"

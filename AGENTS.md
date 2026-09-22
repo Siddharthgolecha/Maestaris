@@ -17,7 +17,7 @@ Use durable evidence in this order:
 5. GitHub task Issues and their comments;
 6. linked pull requests, commits, Actions/checks, proofs, experiments, and artifacts.
 
-There is intentionally **no mutable worker-state YAML** in protocol v3.
+There is intentionally **no mutable worker-state YAML** in protocol v4.
 
 GitHub task Issues and their comments are the live control plane.
 
@@ -103,11 +103,11 @@ Before substantive work:
 2. Resolve the relevant project and read its project YAML.
 3. Resolve the relevant worker(s) and read their agent YAML.
 4. Search GitHub for open Issues labeled with the configured task label, normally `zerion:task`.
-5. Inspect candidate Issue bodies and select tasks whose structured `project` and `worker` fields match.
+5. Inspect candidate Issue bodies. The structured `project` must match. A `worker` field is optional and, when present, pins the task to that specialist.
 6. Read Issue comments chronologically.
 7. Derive live task state from the latest protocol events:
-   - assignment body -> assigned;
-   - ACK -> claimed;
+   - open task with no ownership event -> ready;
+   - ACK -> claimed and establishes worker ownership;
    - BLOCKED -> blocked;
    - DONE / NEEDS_REVIEW -> needs review;
    - ACCEPTED -> accepted;
@@ -130,13 +130,15 @@ The orchestrator creates a GitHub Issue titled with the configured prefix, norma
 [Zerion task] <bounded objective>
 ```
 
-The Issue body begins with `[ORCHESTRATOR:v1]` and includes a stable `task_id`, project, worker, priority, dependencies, objective, constraints, and completion conditions.
+The Issue body begins with `[ORCHESTRATOR:v1]` and includes a stable `task_id`, project, priority, dependencies, objective, constraints, and completion conditions.
+
+New tasks are **READY and unowned by default**. Do not put `worker: unassigned` in the body. Omit `worker` unless the task genuinely must be restricted to one specialist.
 
 ### Claim
 
 A worker posts `[WORKER:<name>:v1]` with `status: ACK` on the Issue before substantive work.
 
-ACK contains dispatcher, claim timestamp, and lease duration.
+ACK contains dispatcher, claim timestamp, and lease duration. The worker identity in the ACK header is the authoritative task owner for the lease.
 
 ### Work
 
@@ -189,7 +191,7 @@ GitHub Projects is a **dashboard**, not canonical state.
 Zerion Actions derive labels such as:
 
 - `zerion:task`
-- `zerion:assigned`
+- `zerion:ready`
 - `zerion:claimed`
 - `zerion:blocked`
 - `zerion:needs-review`

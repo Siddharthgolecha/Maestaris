@@ -62,7 +62,7 @@ Read `coordination/zerion.yaml`, the relevant project and agent configuration, t
 
 Repository/GitHub evidence is authoritative over chat memory.
 
-For ordinary ChatGPT conversations, GitHub events do not wake the chat. Scheduled or manual workers poll GitHub, then use Issues for assignments/ACK/results and linked pull requests for substantive repository work.
+For ordinary ChatGPT conversations, GitHub events do not wake the chat. Scheduled or manual workers poll GitHub. An open task Issue is READY and unowned by default; the first valid ACK establishes the worker lease. Linked pull requests carry substantive repository work.
 
 Start from the root AGENTS.md in this repository for the complete bootstrap.
 """
@@ -79,7 +79,7 @@ def ensure_agents_entrypoint(root: Path) -> bool:
 def build_registry() -> dict[str, Any]:
     return {
         "schema": 1,
-        "protocol_version": 3,
+        "protocol_version": 4,
         "entrypoint": "AGENTS.md",
         "canonical_branch": "main",
         "orchestrator": "orchestrator",
@@ -89,7 +89,7 @@ def build_registry() -> dict[str, Any]:
             "task_title_prefix": "[Zerion task]",
             "task_label": "zerion:task",
             "status_labels": {
-                "assigned": "zerion:assigned",
+                "ready": "zerion:ready",
                 "claimed": "zerion:claimed",
                 "blocked": "zerion:blocked",
                 "needs_review": "zerion:needs-review",
@@ -184,7 +184,7 @@ def validate_repository(root: Path) -> ValidationResult:
     if legacy:
         sample = ", ".join(str(p.relative_to(root)) for p in legacy[:4])
         errors.append(
-            "protocol v3 removed mutable state/mailbox files; migrate or delete: "
+            "protocol v4 removed mutable state/mailbox files; migrate or delete: "
             + sample
         )
 
@@ -199,8 +199,8 @@ def validate_repository(root: Path) -> ValidationResult:
     if registry:
         if registry.get("schema") != 1:
             errors.append(f"{registry_path}: schema must be 1")
-        if registry.get("protocol_version") != 3:
-            errors.append(f"{registry_path}: protocol_version must be 3")
+        if registry.get("protocol_version") != 4:
+            errors.append(f"{registry_path}: protocol_version must be 4")
         if registry.get("entrypoint") != "AGENTS.md":
             errors.append(f"{registry_path}: entrypoint must be AGENTS.md")
 
@@ -220,7 +220,7 @@ def validate_repository(root: Path) -> ValidationResult:
                     errors.append(f"{registry_path}: github.{key} is required")
             status_labels = github.get("status_labels")
             required_statuses = {
-                "assigned", "claimed", "blocked", "needs_review",
+                "ready", "claimed", "blocked", "needs_review",
                 "accepted", "revise", "rejected"
             }
             if not isinstance(status_labels, dict):
@@ -267,7 +267,7 @@ def validate_repository(root: Path) -> ValidationResult:
         if control.get("transport") != "github_issue":
             errors.append(f"{path}: control_plane.transport must be github_issue")
         if "mailboxes" in data:
-            errors.append(f"{path}: mailboxes were removed in protocol v3")
+            errors.append(f"{path}: mailboxes were removed in protocol v4")
 
     for path in sorted(agents_dir.glob("*.yaml")) if agents_dir.exists() else []:
         try:
@@ -298,7 +298,7 @@ def validate_repository(root: Path) -> ValidationResult:
             if control.get("transport") != "github_issue":
                 errors.append(f"{path}: control_plane.transport must be github_issue")
         if "mailbox" in data or "current_task" in data or "current_objective" in data:
-            errors.append(f"{path}: mutable mailbox/task fields were removed in protocol v3")
+            errors.append(f"{path}: mutable mailbox/task fields were removed in protocol v4")
 
     if registry:
         listed = set(map(str, registry.get("projects") or []))

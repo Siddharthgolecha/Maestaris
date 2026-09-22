@@ -35,6 +35,12 @@ Also enable:
 
 Filter open task Issues.
 
+### Ready
+
+```text
+label:zerion:ready
+```
+
 ### Claimed
 
 ```text
@@ -63,10 +69,10 @@ label:priority:P0
 
 ## Status labels
 
-Zerion derives exactly one live status label from the Issue event history:
+Zerion derives exactly one live status label from the Issue event history. READY means the work is available and has no active ACK owner:
 
 ```text
-zerion:assigned
+zerion:ready
 zerion:claimed
 zerion:blocked
 zerion:needs-review

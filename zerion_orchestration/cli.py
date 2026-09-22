@@ -38,9 +38,9 @@ def command_init(args: argparse.Namespace) -> int:
     registry_path = root / "coordination" / "zerion.yaml"
     registry = load_yaml(registry_path) if registry_path.exists() else build_registry()
 
-    if registry.get("protocol_version") != 3:
+    if registry.get("protocol_version") != 4:
         print(
-            "existing Zerion registry is not protocol v3; migrate before init",
+            "existing Zerion registry is not protocol v4; migrate before init",
             file=sys.stderr,
         )
         return 2

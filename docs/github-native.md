@@ -6,7 +6,7 @@ Zerion uses GitHub as the live coordination substrate.
 
 Each bounded task is an Issue.
 
-The body is the assignment. Comments form the event log.
+The body defines the bounded task. A newly opened task is READY and unowned by default. Comments form the event log; the first valid ACK establishes the active worker lease.
 
 ## Pull requests
 
@@ -30,7 +30,7 @@ Actions do not directly invoke an ordinary ChatGPT sidebar conversation.
 Zerion derives managed labels from the Issue history. By default:
 
 - `zerion:task`
-- `zerion:assigned`
+- `zerion:ready`
 - `zerion:claimed`
 - `zerion:blocked`
 - `zerion:needs-review`

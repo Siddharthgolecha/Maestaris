@@ -126,7 +126,7 @@ ChatGPT schedule / user invocation
 
 That is why Zerion is built around **safe polling and idempotency**, not fake webhook-driven chat execution.
 
-## The v0.5 model
+## The current model
 
 Zerion stores stable configuration in the repository and live orchestration state in GitHub itself.
 
@@ -175,14 +175,16 @@ with a structured body:
 [ORCHESTRATOR:v1]
 task_id: convergence-theory-0042
 project: convergence
-worker: convergence-theory
-status: ASSIGNED
 priority: P0
 depends_on: []
 ...
 ```
 
-A worker pool later polls GitHub, sees the task, verifies there is no valid competing ACK, and comments:
+That Issue is **READY**. No worker owns it yet.
+
+If the work truly requires one specialist, the orchestrator may add `worker: convergence-theory`; otherwise worker pools are free to select an eligible specialist.
+
+A worker pool later polls GitHub, sees the task, verifies there is no valid competing ACK, selects a suitable worker, and comments:
 
 ```text
 [WORKER:convergence-theory:v1]
@@ -192,6 +194,8 @@ dispatcher: pool-A
 claimed_at: ...
 lease_hours: 3
 ```
+
+That ACK creates the lease and establishes the worker as the current owner.
 
 For repository work it opens a linked draft PR early.
 
@@ -205,7 +209,7 @@ Zerion ships an Issue/comment workflow that:
 
 1. validates structured Zerion task records;
 2. reconstructs the task's current protocol state from Issue comments;
-3. derives GitHub labels such as `zerion:claimed`, `zerion:blocked`, or `zerion:needs-review`;
+3. derives GitHub labels such as `zerion:ready`, `zerion:claimed`, `zerion:blocked`, or `zerion:needs-review`;
 4. preserves unrelated user labels.
 
 Those labels are derived metadata. The Issue history remains authoritative.
@@ -229,6 +233,7 @@ is:issue label:"zerion:task"
 6. Add useful views such as:
    - Blocked: `label:zerion:blocked`
    - Needs review: `label:zerion:needs-review`
+   - Ready: `label:zerion:ready`
    - Claimed: `label:zerion:claimed`
    - P0: `label:priority:P0`
 
@@ -344,7 +349,7 @@ Dogfooding showed that this created the wrong abstraction:
 - parallel workers could contend on state files;
 - AI runtimes with GitHub connector access may not have shell GitHub access.
 
-v0.5 therefore makes GitHub the single live state machine.
+Zerion therefore makes GitHub the single live state machine. Protocol v4 additionally separates **work availability** from **worker ownership**: an open task is READY; an ACK creates the active owner lease.
 
 ## Design principles
 
@@ -354,6 +359,7 @@ v0.5 therefore makes GitHub the single live state machine.
 - **PRs are work, not mailboxes.**
 - **Actions react to GitHub; ChatGPT workers poll GitHub.**
 - **Projects is a dashboard, not canonical state.**
+- **READY work is unowned until an ACK claims it.**
 - **Stable task IDs make retries safe.**
 - **Evidence beats summaries.**
 - **Negative results stay negative.**
@@ -374,6 +380,7 @@ v0.5 therefore makes GitHub the single live state machine.
 - [Failure recovery](docs/failure-recovery.md)
 - [Scaling](docs/scaling.md)
 - [Migrating to v0.5](docs/migration-v0.5.md)
+- [Migrating to v0.6 / protocol v4](docs/migration-v0.6.md)
 
 ## License
 
