@@ -380,6 +380,7 @@ Zerion therefore makes GitHub the single live state machine. Protocol v4 additio
 - [Failure recovery](docs/failure-recovery.md)
 - [Scaling](docs/scaling.md)
 - [Migrating to v0.5](docs/migration-v0.5.md)
+- [Migrating to v0.6 / protocol v4](docs/migration-v0.6.md)
 
 ## License
 
