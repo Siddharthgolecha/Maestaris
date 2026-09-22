@@ -267,7 +267,7 @@ def validate_repository(root: Path) -> ValidationResult:
         if control.get("transport") != "github_issue":
             errors.append(f"{path}: control_plane.transport must be github_issue")
         if "mailboxes" in data:
-            errors.append(f"{path}: mailboxes were removed in protocol v3")
+            errors.append(f"{path}: mailboxes were removed in protocol v4")
 
     for path in sorted(agents_dir.glob("*.yaml")) if agents_dir.exists() else []:
         try:
@@ -298,7 +298,7 @@ def validate_repository(root: Path) -> ValidationResult:
             if control.get("transport") != "github_issue":
                 errors.append(f"{path}: control_plane.transport must be github_issue")
         if "mailbox" in data or "current_task" in data or "current_objective" in data:
-            errors.append(f"{path}: mutable mailbox/task fields were removed in protocol v3")
+            errors.append(f"{path}: mutable mailbox/task fields were removed in protocol v4")
 
     if registry:
         listed = set(map(str, registry.get("projects") or []))
