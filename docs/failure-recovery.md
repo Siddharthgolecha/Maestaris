@@ -1,33 +1,45 @@
 # Failure recovery
 
-## Worker repeats completed work
+## State points to a stale task Issue
 
-Use stable task IDs and check for terminal results before execution.
+Inspect the Issue and linked PR evidence. Repair the state index to the newest durable GitHub state.
 
 ## Two dispatchers race
 
-Give each worker a configured pool and require ACK before substantive work.
+Both must inspect comments before ACK. The first valid unexpired ACK lease owns the task.
 
 ## Worker ACKs and disappears
 
-Use an ACK lease. After expiry, the orchestrator may mark the claim stale and reassign the task.
+After lease expiry, record the stale claim on the Issue and reassign or release the task.
 
-## Chat memory disagrees with repository state
+## Draft PR exists but no terminal report
 
-Repository state wins.
+Treat the task as still active unless evidence proves otherwise. Inspect checks and recent commits before reassigning.
+
+## Task Issue exists but state index is empty
+
+The Issue is durable evidence. Reconstruct state from its body/comments and linked PR.
+
+## PR exists but is not linked to an Issue
+
+Treat it as an audit problem. Link it to the correct task before relying on it as Zerion work.
+
+## Issue auto-closed too early
+
+Reopen it when the protocol still requires review or revision. Closing keywords are conveniences, not permission to skip evidence review.
+
+## Chat memory disagrees with GitHub
+
+GitHub wins.
 
 ## Worker invents a new objective
 
-Reject the scope expansion. Workers execute bounded assignments; orchestrators select the next major objective.
+Reject the scope expansion. Orchestrators create bounded task Issues.
 
 ## Negative result disappears
 
-Preserve failed or falsifying results as durable evidence. A later interpretation may contextualize them but should not silently rewrite them as success.
+Recover it from Issue comments, commits, or artifacts and restore the state/canonical record without upgrading its classification.
 
-## Mailbox branch contains substantive work
+## Legacy mailbox branch contains substantive work
 
-Move the substantive change to a task branch/PR. Mailboxes are control-plane channels only.
-
-## Worker is genuinely blocked
-
-A precise blocker is a valid result. Report the first exact missing dependency, failed assumption, permission issue, unavailable artifact, or verification failure.
+Move substantive changes to a normal task branch/PR. Legacy mailbox PRs remain control-plane-only.
