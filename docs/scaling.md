@@ -1,37 +1,29 @@
 # Scaling
 
-Zerion scales by keeping task identity native to GitHub.
+## Scale worker identities, not schedulers
 
-## Worker pools
+Prefer a small number of generic ChatGPT worker-pool schedules over one scheduled task per specialist.
 
-Use a small number of generic dispatcher pools. Pools inspect state indexes and open task Issues for eligible workers.
+Static agent config maps specialist identities to pools.
 
-Respect `max_tasks_per_run` and ACK leases.
+## Discover work with GitHub
 
-## Issue discovery
+Pools search open `zerion:task` Issues, filter by structured project/worker fields, then inspect comments for authoritative status.
 
-At larger scale, use GitHub search, optional labels, milestones, or Projects views to narrow open Zerion tasks.
-
-Suggested optional labels:
-
-```text
-zerion
-zerion:task
-zerion:blocked
-priority:P0
-priority:P1
-```
-
-Labels are discoverability aids, not protocol state.
-
-## Dependencies
-
-Keep explicit `depends_on` task IDs in assignments. GitHub Projects or issue relationships may visualize dependencies when available, but durable protocol fields remain portable across runtimes.
-
-## Milestones and Projects
-
-Milestones are useful for releases or research phases. GitHub Projects can provide a board/dashboard. Neither is required because connected AI runtimes may not expose every native surface.
+Derived status and priority labels make discovery cheaper but do not replace comment inspection.
 
 ## Parallelism
 
-Parallelize independent Issues, not duplicate workers on the same task. The objective is critical-path progress, not maximum agent activity.
+Parallelize independent task Issues.
+
+Do not run multiple workers on the same task unless the protocol explicitly defines collaboration.
+
+## Projects
+
+Use GitHub Projects for human overview and filtering. Auto-add task Issues by label and let closed Issues become Done.
+
+## Large repositories
+
+Use multiple projects, explicit dependencies, priority fields, and bounded `max_tasks_per_run`.
+
+The goal is critical-path progress, not maximum concurrent activity.
