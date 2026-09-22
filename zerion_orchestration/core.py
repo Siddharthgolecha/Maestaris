@@ -124,6 +124,7 @@ def build_registry() -> dict[str, Any]:
                 "enabled": True,
                 "accepted": "APPROVE",
                 "revise": "REQUEST_CHANGES",
+                "same_actor_fallback": "COMMENT",
             },
         },
         "pools": {
