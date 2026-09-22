@@ -239,6 +239,8 @@ is:issue label:"zerion:task"
 
 The Project is for visibility. A fresh worker must be able to reconstruct work without reading Project-specific fields.
 
+If desired, Zerion can also mirror Priority, Status, Worker, Dispatcher, and Runtime into native Project fields using an optional Project token. Labels remain the portable fallback.
+
 See [GitHub Projects](docs/github-projects.md).
 
 ## How ChatGPT workers use Zerion
@@ -266,27 +268,30 @@ or:
 
 The repository should contain enough durable information for the new chat to recover.
 
-## Suggested ChatGPT topology
+## Suggested multi-AI topology
 
-For a serious project:
+For a serious project, worker pools do not need to share one model provider:
 
 ```text
-Orchestrator chat
-    |
-    +-- Worker Pool A scheduled chat
-    |      +-- theory worker identities
-    |      +-- audit worker identities
-    |
-    +-- Worker Pool B scheduled chat
-           +-- implementation identities
-           +-- experiment identities
+                        GitHub READY queue
+                               |
+             +-----------------+-----------------+
+             |                                   |
+      ChatGPT scheduled                    Gemini Spark
+        dispatcher                          dispatcher
+             |                                   |
+             +--------------- ACK lease ---------+
+                               |
+                         task branch / PR
 ```
 
-A worker identity is not the same thing as a scheduled ChatGPT task.
+You can also add Claude/Actions, local CLI agents, or API workers. Every runtime uses the same Issue/ACK/result protocol, and the first valid ACK lease owns the task.
 
-A small number of generic scheduled worker pools can service many specialist identities defined in GitHub.
+A worker identity is not the same thing as a scheduler or provider. Use a unique `dispatcher:` value per scheduler, and optionally record `runtime:` / `instance:` in ACK events.
 
-When you are actively using ChatGPT, you can run a worker immediately. When you are away, scheduled polling provides eventual progress.
+Staggering provider schedules reduces unnecessary races while still providing failover. For example, ChatGPT and Gemini Spark can check the same pool at different points in the hour.
+
+See [Multi-AI orchestration](docs/runtime/multi-ai-orchestration.md).
 
 ## Repository layout
 
@@ -375,6 +380,8 @@ Zerion therefore makes GitHub the single live state machine. Protocol v4 additio
 - [GitHub-native integration](docs/github-native.md)
 - [GitHub Projects](docs/github-projects.md)
 - [Multi-model GitHub runtimes](docs/runtime/multi-model-github.md)
+- [Multi-AI orchestration](docs/runtime/multi-ai-orchestration.md)
+- [Releases and versioning](docs/releases.md)
 - [ChatGPT scheduled runtime](docs/runtime/chatgpt-scheduled.md)
 - [Manual chat runtime](docs/runtime/manual-chat.md)
 - [Quick start](docs/quickstart.md)

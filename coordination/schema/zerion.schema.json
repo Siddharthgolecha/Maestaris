@@ -40,7 +40,23 @@
         "priority_label_prefix": {"type": "string"},
         "task_pull_request": {"type": "object"},
         "native_reviews": {"type": "object"},
-        "projects": {"type": "object"}
+        "projects": {
+          "type": "object",
+          "properties": {
+            "optional": {"type": "boolean"},
+            "auto_add_filter": {"type": "string"},
+            "field_sync": {
+              "type": "object",
+              "properties": {
+                "enabled": {"type": "boolean"},
+                "project_id_env": {"type": "string"},
+                "token_env": {"type": "string"},
+                "fields": {"type": "object"},
+                "mappings": {"type": "object"}
+              }
+            }
+          }
+        }
       }
     },
     "pools": {

@@ -84,6 +84,23 @@ For ordinary ChatGPT usage, orchestrator and worker chats are invoked manually o
 
 Actions may validate protocol records, synchronize labels, run tests, and feed dashboards. They are not a substitute for waking the ChatGPT worker.
 
+## Multi-AI dispatchers
+
+A Zerion worker pool is a protocol role, not a model-provider identity.
+
+ChatGPT schedules, Gemini Spark schedules, Claude/Actions workers, local agents, and future runtimes may all poll the same READY queue.
+
+Each scheduled dispatcher should use a stable, unique `dispatcher:` value in its ACK. It may also include optional metadata:
+
+```text
+runtime: chatgpt | gemini-spark | claude | ...
+instance: <stable scheduler name>
+```
+
+The first valid ACK lease wins regardless of provider. Other runtimes must reread the Issue history and skip work owned by an unexpired ACK.
+
+Provider/runtime metadata is useful for debugging and dashboards, but it never outranks Issue history or evidence.
+
 ## Resolve your role
 
 Use an explicitly supplied role or worker identity when one is given.
@@ -139,6 +156,8 @@ New tasks are **READY and unowned by default**. Do not put `worker: unassigned` 
 A worker posts `[WORKER:<name>:v1]` with `status: ACK` on the Issue before substantive work.
 
 ACK contains dispatcher, claim timestamp, and lease duration. The worker identity in the ACK header is the authoritative task owner for the lease.
+
+For multi-AI deployments, use a unique dispatcher ID per scheduled runtime and optionally include `runtime:` and `instance:`. These fields do not change claim semantics; they make ownership/debugging/dashboard state explicit across ChatGPT, Gemini Spark, Claude, and other schedulers.
 
 ### Work
 
@@ -199,6 +218,8 @@ Zerion Actions derive labels such as:
 - `priority:P0`
 
 A Project can auto-add `zerion:task` Issues and use those labels for views. Project status/fields must never be required to reconstruct a task.
+
+When a repository configures optional Project field synchronization, Zerion may mirror derived Priority, Status, Worker, Dispatcher, and Runtime fields into the Project. The Issue body/comments remain canonical if the Project view is missing or stale.
 
 ## Blocking and dormancy
 

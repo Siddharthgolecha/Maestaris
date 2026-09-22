@@ -23,3 +23,9 @@ jobs:
       - run: python scripts/sync_github_issue.py
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Sync optional GitHub Project fields
+        run: python scripts/sync_project_fields.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ZERION_PROJECT_ID: ${{ vars.ZERION_PROJECT_ID }}
+          ZERION_PROJECT_TOKEN: ${{ secrets.ZERION_PROJECT_TOKEN }}

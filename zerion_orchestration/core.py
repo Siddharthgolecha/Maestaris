@@ -111,6 +111,30 @@ def build_registry() -> dict[str, Any]:
             "projects": {
                 "optional": True,
                 "auto_add_filter": 'is:issue label:"zerion:task"',
+                "field_sync": {
+                    "enabled": False,
+                    "project_id_env": "ZERION_PROJECT_ID",
+                    "token_env": "ZERION_PROJECT_TOKEN",
+                    "fields": {
+                        "priority": "Priority",
+                        "status": "Status",
+                        "worker": "Worker",
+                        "dispatcher": "Dispatcher",
+                        "runtime": "Runtime",
+                    },
+                    "mappings": {
+                        "priority": {"P0": "P0", "P1": "P1", "P2": "P2"},
+                        "status": {
+                            "ready": "Todo",
+                            "claimed": "In Progress",
+                            "blocked": "In Progress",
+                            "needs_review": "In Progress",
+                            "revise": "In Progress",
+                            "accepted": "Done",
+                            "rejected": "Done",
+                        },
+                    },
+                },
             },
         },
         "pools": {

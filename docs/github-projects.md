@@ -87,11 +87,58 @@ If a label disagrees with the Issue comments, the Issue comments are authoritati
 
 ## Custom Project fields
 
-You may add fields such as Worker, Project, Priority, Research phase, or Release.
+You may add fields such as Worker, Project, Priority, Research phase, Release, Dispatcher, or Runtime.
 
 Do not make custom fields mandatory for worker correctness unless every runtime you use can reliably read/write GitHub Projects.
 
-For the default Zerion setup, structured Issue bodies remain portable across ChatGPT, API agents, and other GitHub-connected runtimes.
+For the default Zerion setup, structured Issue bodies remain portable across ChatGPT, Gemini Spark, Claude, API agents, and other GitHub-connected runtimes.
+
+### Optional automatic field synchronization
+
+Labels are always the portable fallback. If you want the native Project fields themselves to stay synchronized, enable `github.projects.field_sync` in `coordination/zerion.yaml`.
+
+The shipped event workflow can mirror:
+
+- `Priority` from the task Issue's `priority:` field;
+- `Status` from the reduced Issue event history;
+- `Worker`, `Dispatcher`, and `Runtime` from the latest ACK.
+
+Set these repository values:
+
+```text
+Repository variable:
+  ZERION_PROJECT_ID=<ProjectV2 node ID>
+
+Repository secret:
+  ZERION_PROJECT_TOKEN=<token with permission to update that Project>
+```
+
+Then set:
+
+```yaml
+github:
+  projects:
+    field_sync:
+      enabled: true
+```
+
+The Project should contain fields matching the configured names. By default Zerion expects:
+
+```text
+Priority     single select: P0 / P1 / P2
+Status       single select: Todo / In Progress / Done
+Worker       text
+Dispatcher   text
+Runtime      text
+```
+
+The mappings are configurable in `coordination/zerion.yaml`.
+
+A personal/user Project commonly needs credentials beyond the repository's normal `GITHUB_TOKEN`; that is why Project synchronization uses a separate optional token. If the token/project ID is absent, the workflow safely skips Project mutation and the normal labels continue to work.
+
+The field synchronizer also adds the task Issue to the configured Project if it is not already present.
+
+If Project fields ever disagree with Issue history, Issue history wins.
 
 ## Automation boundary
 

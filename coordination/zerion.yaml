@@ -22,8 +22,8 @@ github:
   priority_label_prefix: "priority:"
   task_pull_request:
     draft_on_start: true
-    branch_prefix: "zerion/task"
-    link_keyword: "Resolves"
+    branch_prefix: zerion/task
+    link_keyword: Resolves
   native_reviews:
     accepted: APPROVE
     revise: REQUEST_CHANGES
@@ -31,6 +31,29 @@ github:
   projects:
     optional: true
     auto_add_filter: 'is:issue label:"zerion:task"'
+    field_sync:
+      enabled: false
+      project_id_env: ZERION_PROJECT_ID
+      token_env: ZERION_PROJECT_TOKEN
+      fields:
+        priority: Priority
+        status: Status
+        worker: Worker
+        dispatcher: Dispatcher
+        runtime: Runtime
+      mappings:
+        priority:
+          P0: P0
+          P1: P1
+          P2: P2
+        status:
+          ready: Todo
+          claimed: In Progress
+          blocked: In Progress
+          needs_review: In Progress
+          revise: In Progress
+          accepted: Done
+          rejected: Done
 
 pools:
   A:

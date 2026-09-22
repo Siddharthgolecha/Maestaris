@@ -11,6 +11,12 @@
 - Update worker pools to select eligible READY work before claiming it.
 - Preserve legacy `status: ASSIGNED` parsing during migration.
 - Add protocol-v4 tests and migration guidance.
+- Support provider-neutral multi-AI scheduler identity in ACKs.
+- Document shared ChatGPT/Gemini Spark worker pools using the same lease protocol.
+- Add optional GitHub Project field synchronization for Priority, Status, Worker, Dispatcher, and Runtime.
+- Keep labels as the portable dashboard fallback when Project mutation is not configured.
+- Add automated GitHub Releases after successful validation on main.
+- Establish `v0.6.0` as the first formal GitHub release boundary.
 
 ## 0.5.0
 

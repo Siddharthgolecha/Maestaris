@@ -10,6 +10,7 @@ import yaml
 
 from zerion_orchestration.cli import main
 from zerion_orchestration.core import validate_repository
+from zerion_orchestration.project_sync import latest_ack, project_field_values
 from zerion_orchestration.protocol import (
     desired_managed_labels,
     is_managed_label,
@@ -50,6 +51,13 @@ class ZerionProtocolV4Tests(unittest.TestCase):
             self.assertEqual(registry["protocol_version"], 4)
             self.assertEqual(registry["github"]["task_transport"], "issue")
             self.assertEqual(registry["github"]["task_label"], "zerion:task")
+            self.assertFalse(
+                registry["github"]["projects"]["field_sync"]["enabled"]
+            )
+            self.assertEqual(
+                registry["github"]["projects"]["field_sync"]["fields"]["priority"],
+                "Priority",
+            )
             self.assertEqual(
                 registry["github"]["status_labels"]["ready"],
                 "zerion:ready",
@@ -265,6 +273,72 @@ lease_hours: 3
         self.assertTrue(is_managed_label("zerion:ready", github))
         self.assertTrue(is_managed_label("priority:P1", github))
         self.assertFalse(is_managed_label("documentation", github))
+
+    def test_multi_ai_ack_metadata_is_optional_and_project_sync_can_use_it(self):
+        ack = """[WORKER:alpha-build:v1]
+task_id: t1
+status: ACK
+dispatcher: gemini-spark-pool-b
+runtime: gemini-spark
+instance: personal-schedule-b
+claimed_at: 2026-09-22T19:00:00Z
+lease_hours: 3
+"""
+        self.assertEqual(validate_protocol_comment(ack), [])
+        self.assertEqual(
+            latest_ack([ack]),
+            {
+                "worker": "alpha-build",
+                "dispatcher": "gemini-spark-pool-b",
+                "runtime": "gemini-spark",
+                "instance": "personal-schedule-b",
+                "claimed_at": "2026-09-22T19:00:00Z",
+            },
+        )
+
+        body = """[ORCHESTRATOR:v1]
+task_id: t1
+project: alpha
+priority: P0
+"""
+        field_sync = {
+            "mappings": {
+                "priority": {"P0": "P0"},
+                "status": {"claimed": "In Progress"},
+            }
+        }
+        self.assertEqual(
+            project_field_values(body, [ack], field_sync),
+            {
+                "priority": "P0",
+                "status": "In Progress",
+                "worker": "alpha-build",
+                "dispatcher": "gemini-spark-pool-b",
+                "runtime": "gemini-spark",
+            },
+        )
+
+    def test_project_sync_without_runtime_still_works_for_legacy_ack(self):
+        ack = """[WORKER:alpha-theory:v1]
+task_id: t1
+status: ACK
+dispatcher: chatgpt-pool-a
+claimed_at: now
+lease_hours: 3
+"""
+        values = project_field_values(
+            "priority: P1\n",
+            [ack],
+            {
+                "mappings": {
+                    "priority": {"P1": "P1"},
+                    "status": {"claimed": "In Progress"},
+                }
+            },
+        )
+        self.assertEqual(values["worker"], "alpha-theory")
+        self.assertEqual(values["dispatcher"], "chatgpt-pool-a")
+        self.assertNotIn("runtime", values)
 
 
 if __name__ == "__main__":
