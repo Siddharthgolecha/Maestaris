@@ -94,6 +94,20 @@ def _marker_exists(root: Path, repository: str, marker: str, branch: str) -> boo
         return False
 
 
+def _record_mailbox(root: Path, worker: str, number: int) -> None:
+    agent_path = root / "coordination" / "agents" / f"{worker}.yaml"
+    if agent_path.exists():
+        agent = load_yaml(agent_path)
+        agent.setdefault("mailbox", {})["pr"] = number
+        dump_yaml(agent_path, agent)
+
+    state_path = root / "coordination" / "state" / f"{worker}.yaml"
+    if state_path.exists():
+        state = load_yaml(state_path)
+        state.setdefault("mailbox", {})["pr"] = number
+        dump_yaml(state_path, state)
+
+
 def create_mailboxes(
     root: Path,
     project_name: str,
@@ -129,11 +143,7 @@ def create_mailboxes(
         existing_pr = _open_pr_number(root, str(repo), branch)
         if existing_pr is not None:
             mailboxes[worker] = existing_pr
-            agent_path = root / "coordination" / "agents" / f"{worker}.yaml"
-            if agent_path.exists():
-                agent = load_yaml(agent_path)
-                agent.setdefault("mailbox", {})["pr"] = existing_pr
-                dump_yaml(agent_path, agent)
+            _record_mailbox(root, worker, existing_pr)
             dump_yaml(project_path, project)
             continue
 
@@ -197,12 +207,7 @@ def create_mailboxes(
         mailboxes[worker] = number
         created[worker] = number
 
-        agent_path = root / "coordination" / "agents" / f"{worker}.yaml"
-        if agent_path.exists():
-            agent = load_yaml(agent_path)
-            agent.setdefault("mailbox", {})["pr"] = number
-            dump_yaml(agent_path, agent)
-
+        _record_mailbox(root, worker, number)
         dump_yaml(project_path, project)
 
     dump_yaml(project_path, project)
