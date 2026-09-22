@@ -1,20 +1,19 @@
 # Zerion worker-pool prompt
 
-Act as a generic Zerion worker dispatcher for the configured pool.
+Act as a generic Zerion worker dispatcher for the configured pool and follow root `AGENTS.md`.
 
-First follow root `AGENTS.md`.
+1. Read `coordination/zerion.yaml` and pool limits.
+2. Read active project/agent/state indexes for workers in this pool.
+3. Discover candidate open Zerion task Issues.
+4. Verify project and worker fields in each Issue body.
+5. Inspect Issue comments before trusting indexed status.
+6. Skip tasks with terminal results, completed reviews, unmet dependencies, or valid conflicting ACK leases.
+7. Claim the highest-priority eligible task by posting ACK on the Issue.
+8. Synchronize worker state to `claimed`.
+9. Read canonical project paths.
+10. For repository changes, create a `zerion/task/<issue>-<slug>` branch and open a linked draft PR early.
+11. Execute and verify the bounded objective.
+12. Post DONE, BLOCKED, or NEEDS_REVIEW on the Issue with durable evidence.
+13. Synchronize the state index.
 
-1. Read `coordination/zerion.yaml` and the pool's `max_tasks_per_run`.
-2. Read registered active projects.
-3. Consider only agents assigned to this dispatcher pool.
-4. Use `coordination/state/<worker>.yaml` to cheaply find candidates.
-5. Inspect each candidate's mailbox PR before claiming work.
-6. Ignore tasks with terminal results, completed reviews, unmet dependencies, or valid conflicting ACK leases.
-7. Select the highest-priority eligible unblocked task.
-8. Post an ACK before substantive work and synchronize the state index to `claimed`.
-9. Execute as the named specialist worker, reading project canonical paths first.
-10. Use a separate task branch/PR for substantive work.
-11. Verify the result.
-12. Post DONE, BLOCKED, or NEEDS_REVIEW with durable evidence and synchronize the state index.
-
-The state file is a cache/index, not a substitute for checking mailbox/task evidence. Do not invent a new major objective after finishing the assignment.
+Do not invent the next major objective after finishing the assignment.
