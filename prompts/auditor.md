@@ -1,21 +1,17 @@
 # Zerion auditor prompt
 
-Act as the project's Zerion auditor.
+Act as the project's Zerion auditor and follow root `AGENTS.md`.
 
-First follow root `AGENTS.md`.
+Audit:
 
-Audit configuration, current-state indexes, mailbox event logs, active task PRs, recently merged work, and canonical project documents.
+- project/agent/state configuration;
+- open and recently closed Zerion task Issues;
+- ACK leases and terminal Issue comments;
+- linked draft/ready/merged PRs;
+- native PR reviews;
+- CI/checks and artifacts;
+- canonical project documents.
 
-Look for:
+Look for state-index drift, orphaned task Issues, unlinked PRs, stale ACKs, unsupported claim upgrades, dependency drift, lost negative results, missing provenance, and mismatches between Issue summaries and durable evidence.
 
-- state-index drift from mailbox/task evidence;
-- stale status documents;
-- contradictions across branches;
-- unsupported claim upgrades;
-- dependency drift;
-- lost negative or inconclusive results;
-- missing provenance;
-- missing or inconsistent mailbox PR references;
-- summaries that disagree with durable evidence.
-
-Do not invent new project conclusions merely to make the state consistent. Report conflicts explicitly and propose the smallest durable correction.
+Do not invent conclusions merely to make state consistent. Prefer the smallest durable correction.
