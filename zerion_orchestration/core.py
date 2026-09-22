@@ -141,6 +141,17 @@ def build_registry() -> dict[str, Any]:
             "A": {"max_tasks_per_run": 1},
             "B": {"max_tasks_per_run": 1},
         },
+        "scheduler_bootstrap": {
+            "enabled": True,
+            "source": "pools",
+            "cadence": "hourly",
+            "reconcile_existing": True,
+            "instance_template": "zerion-{runtime}-pool-{pool}",
+            "schedule_minutes": {
+                "chatgpt": {"A": 22, "B": 52},
+                "gemini-spark": {"A": 37, "B": 7},
+            },
+        },
         "projects": [],
     }
 
@@ -258,6 +269,52 @@ def validate_repository(root: Path) -> ValidationResult:
         pools = registry.get("pools")
         if not isinstance(pools, dict) or not pools:
             errors.append(f"{registry_path}: pools must be a non-empty mapping")
+
+        bootstrap = registry.get("scheduler_bootstrap")
+        if bootstrap is not None:
+            if not isinstance(bootstrap, dict):
+                errors.append(f"{registry_path}: scheduler_bootstrap must be a mapping")
+            else:
+                if bootstrap.get("source") not in (None, "pools"):
+                    errors.append(
+                        f"{registry_path}: scheduler_bootstrap.source must be pools"
+                    )
+                if bootstrap.get("cadence") not in (None, "hourly"):
+                    errors.append(
+                        f"{registry_path}: scheduler_bootstrap.cadence must be hourly"
+                    )
+                template = bootstrap.get("instance_template")
+                if template and ("{runtime}" not in str(template) or "{pool}" not in str(template)):
+                    errors.append(
+                        f"{registry_path}: scheduler_bootstrap.instance_template "
+                        "must include {runtime} and {pool}"
+                    )
+                minutes = bootstrap.get("schedule_minutes") or {}
+                if not isinstance(minutes, dict):
+                    errors.append(
+                        f"{registry_path}: scheduler_bootstrap.schedule_minutes "
+                        "must be a mapping"
+                    )
+                else:
+                    pool_names = set(pools) if isinstance(pools, dict) else set()
+                    for runtime_name, mapping in minutes.items():
+                        if not isinstance(mapping, dict):
+                            errors.append(
+                                f"{registry_path}: schedule_minutes.{runtime_name} "
+                                "must be a mapping"
+                            )
+                            continue
+                        for pool_name, minute in mapping.items():
+                            if pool_name not in pool_names:
+                                errors.append(
+                                    f"{registry_path}: schedule_minutes.{runtime_name} "
+                                    f"references unknown pool {pool_name!r}"
+                                )
+                            if not isinstance(minute, int) or not 0 <= minute <= 59:
+                                errors.append(
+                                    f"{registry_path}: schedule minute for "
+                                    f"{runtime_name}/{pool_name} must be 0..59"
+                                )
 
         if not isinstance(registry.get("projects"), list):
             errors.append(f"{registry_path}: projects must be a list")
