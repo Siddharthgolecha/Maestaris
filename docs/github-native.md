@@ -37,6 +37,8 @@ When a task has a PR, an orchestrator can use GitHub's review interface:
 
 The task Issue still receives the Zerion review event so every task has one consistent control-plane history.
 
+GitHub does not allow a pull-request author to approve their own PR. In single-user or same-identity agent setups, use a native `COMMENT` review (or no native review) and keep the Issue-side Zerion review event canonical.
+
 ## Optional GitHub features
 
 ### Labels
