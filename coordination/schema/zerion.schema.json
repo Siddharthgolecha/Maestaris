@@ -3,18 +3,12 @@
   "title": "Zerion Registry",
   "type": "object",
   "required": [
-    "schema",
-    "protocol_version",
-    "entrypoint",
-    "canonical_branch",
-    "orchestrator",
-    "defaults",
-    "pools",
-    "projects"
+    "schema", "protocol_version", "entrypoint", "canonical_branch",
+    "orchestrator", "defaults", "github", "pools", "projects"
   ],
   "properties": {
     "schema": {"const": 1},
-    "protocol_version": {"type": "integer", "minimum": 1},
+    "protocol_version": {"const": 3},
     "entrypoint": {"const": "AGENTS.md"},
     "canonical_branch": {"type": "string"},
     "orchestrator": {"type": "string"},
@@ -27,33 +21,26 @@
     },
     "github": {
       "type": "object",
+      "required": [
+        "task_transport", "task_title_prefix", "task_label",
+        "status_labels", "priority_label_prefix", "task_pull_request",
+        "native_reviews", "projects"
+      ],
       "properties": {
-        "task_transport": {"enum": ["issue"]},
-        "task_issue": {
+        "task_transport": {"const": "issue"},
+        "task_title_prefix": {"type": "string"},
+        "task_label": {"type": "string"},
+        "status_labels": {
           "type": "object",
-          "properties": {
-            "title_prefix": {"type": "string"},
-            "accepted_state_reason": {"enum": ["completed"]},
-            "rejected_state_reason": {"enum": ["not_planned"]}
-          }
+          "required": [
+            "assigned", "claimed", "blocked", "needs_review",
+            "accepted", "revise", "rejected"
+          ]
         },
-        "task_pull_request": {
-          "type": "object",
-          "properties": {
-            "draft_on_start": {"type": "boolean"},
-            "branch_prefix": {"type": "string"},
-            "link_keyword": {"type": "string"}
-          }
-        },
-        "native_reviews": {
-          "type": "object",
-          "properties": {
-            "enabled": {"type": "boolean"},
-            "accepted": {"enum": ["APPROVE"]},
-            "revise": {"enum": ["REQUEST_CHANGES"]},
-            "same_actor_fallback": {"enum": ["COMMENT"]}
-          }
-        }
+        "priority_label_prefix": {"type": "string"},
+        "task_pull_request": {"type": "object"},
+        "native_reviews": {"type": "object"},
+        "projects": {"type": "object"}
       }
     },
     "pools": {
