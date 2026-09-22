@@ -1,5 +1,5 @@
 schema: 1
-agent: worker-name
+agent: my-project-worker
 project: my-project
 role: specialist
 dispatcher_pool: A
@@ -10,6 +10,3 @@ control_plane:
 
 project_paths:
   - .
-
-current_task: null
-current_objective: null
