@@ -71,6 +71,9 @@ The CLI is for setup, local validation, and maintenance:
 ```bash
 python -m pip install -e .
 
+# If build isolation cannot reach package indexes:
+# python -m pip install --no-build-isolation -e .
+
 zerion init demo-project \
   --workers theory implementation audit \
   --repository owner/repository
