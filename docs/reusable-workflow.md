@@ -24,7 +24,6 @@ jobs:
     uses: Siddharthgolecha/Zerion/.github/workflows/reusable-zerion.yml@v0.6.1
     with:
       zerion_ref: v0.6.1
-    secrets: inherit
 ```
 
 The called workflow checks out the consumer repository, checks out the selected Zerion runtime separately, validates the consumer's static Zerion configuration, validates the current Issue/comment event, and synchronizes managed labels.
@@ -43,7 +42,7 @@ permissions:
 
 A called workflow cannot elevate permissions granted by its caller.
 
-ProjectV2 synchronization is optional and requires a separate Project-capable credential. Pass the Project node ID as `project_id` and the token as `project_token` only when `github.projects.field_sync.enabled` is true in the consumer's `coordination/zerion.yaml`.
+ProjectV2 synchronization is optional and requires a separate Project-capable credential. Pass the Project node ID as `project_id` and only the Project token as `project_token` when `github.projects.field_sync.enabled` is true in the consumer's `coordination/zerion.yaml`.
 
 Example:
 
@@ -58,7 +57,7 @@ jobs:
       project_token: ${{ secrets.ZERION_PROJECT_TOKEN }}
 ```
 
-Do not pass model-provider credentials to this workflow.
+Do not use `secrets: inherit` merely for convenience and do not pass model-provider credentials to this workflow.
 
 ## Version pinning
 
