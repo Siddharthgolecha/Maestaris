@@ -6,8 +6,11 @@ from typing import Iterable
 TASK_TITLE_PREFIX = "[Zerion task]"
 WORKER_TERMINAL = {"DONE", "BLOCKED", "NEEDS_REVIEW"}
 REVIEW_STATES = {"ACCEPTED", "REVISE", "REJECTED"}
+LEGACY_TASK_STATUSES = {"ASSIGNED"}
+OPTIONAL_TASK_STATUSES = {"READY"} | LEGACY_TASK_STATUSES
 
 _FIELD_RE = re.compile(r"^([a-z][a-z0-9_]*):\s*(.*)$", re.MULTILINE)
+_WORKER_HEADER_RE = re.compile(r"^\[WORKER:([^:\]]+):v1\]")
 
 
 def protocol_fields(body: str) -> dict[str, str]:
@@ -17,7 +20,32 @@ def protocol_fields(body: str) -> dict[str, str]:
     }
 
 
-def validate_task_issue(title: str, body: str, title_prefix: str = TASK_TITLE_PREFIX) -> list[str]:
+def worker_from_event(body: str) -> str | None:
+    match = _WORKER_HEADER_RE.match((body or "").strip())
+    if not match:
+        return None
+    worker = match.group(1).strip()
+    return worker or None
+
+
+def pinned_worker(issue_body: str) -> str | None:
+    """Return an optional worker restriction from a task Issue body.
+
+    Worker identity is normally established by the ACK event. A task body may
+    include `worker:` only when the orchestrator intentionally pins the task to
+    a specialist.
+    """
+    value = protocol_fields(issue_body).get("worker", "").strip()
+    if not value or value.lower() == "unassigned":
+        return None
+    return value
+
+
+def validate_task_issue(
+    title: str,
+    body: str,
+    title_prefix: str = TASK_TITLE_PREFIX,
+) -> list[str]:
     errors: list[str] = []
     body = body or ""
 
@@ -28,12 +56,23 @@ def validate_task_issue(title: str, body: str, title_prefix: str = TASK_TITLE_PR
         errors.append("task Issue body must start with [ORCHESTRATOR:v1]")
 
     fields = protocol_fields(body)
-    for key in ("task_id", "project", "worker", "status", "priority"):
+
+    # Queue semantics: the Issue itself is READY. Worker ownership begins only
+    # with an ACK comment. Therefore worker/status are optional in new tasks.
+    for key in ("task_id", "project", "priority"):
         if not fields.get(key):
             errors.append(f"task Issue is missing {key}")
 
-    if fields.get("status") and fields["status"] != "ASSIGNED":
-        errors.append("new task Issue status must be ASSIGNED")
+    status = fields.get("status")
+    if status and status not in OPTIONAL_TASK_STATUSES:
+        errors.append(
+            "task Issue status, when present, must be READY "
+            "(legacy ASSIGNED is accepted during migration)"
+        )
+
+    worker = fields.get("worker")
+    if worker is not None and not worker.strip():
+        errors.append("task Issue worker must be omitted or non-empty")
 
     if not fields.get("objective") and "## Objective" not in body:
         errors.append("task Issue must define objective or a ## Objective section")
@@ -50,6 +89,8 @@ def validate_protocol_comment(body: str) -> list[str]:
 
     if body.startswith("[WORKER:"):
         errors: list[str] = []
+        if not worker_from_event(body):
+            errors.append("worker event header must identify a worker")
         if not fields.get("task_id"):
             errors.append("worker event is missing task_id")
         status = fields.get("status")
@@ -85,7 +126,13 @@ def validate_protocol_comment(body: str) -> list[str]:
 
 
 def reduce_task_status(comments: Iterable[str]) -> str:
-    status = "assigned"
+    """Reduce Issue event history to a derived live status.
+
+    An open Zerion task starts READY. The ACK, not the Issue body, establishes
+    worker ownership.
+    """
+    status = "ready"
+
     for raw in comments:
         body = (raw or "").strip()
         fields = protocol_fields(body)
