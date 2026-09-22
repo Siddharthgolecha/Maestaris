@@ -1,0 +1,23 @@
+schema: 1
+artifact: example-artifact
+role: raw | derived | source | proof | report | benchmark
+canonical_path: path/to/artifact
+
+source:
+  origin: local | external | migrated
+  reference: null
+  retrieved_at: null
+  original_hash: null
+
+reproduction:
+  command: null
+  environment: null
+  output_hash: null
+  status: reproduced
+
+evidence:
+  claim_ids: []
+  classification: null
+  limitations: []
+
+notes: null
