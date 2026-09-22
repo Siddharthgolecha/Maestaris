@@ -1,0 +1,25 @@
+schema: 1
+project: example-project
+title: Zerion Research Demo
+status: active
+repository: owner/repository
+runtime: runtime-defined
+
+canonical_paths:
+  - README.md
+  - examples/research-demo/PROJECT_STATUS.md
+
+orchestrator: orchestrator
+auditor: audit-worker
+
+active_workers:
+  - theory-worker
+  - implementation-worker
+  - audit-worker
+
+dormant_workers: []
+
+mailboxes:
+  theory-worker: null
+  implementation-worker: null
+  audit-worker: null
