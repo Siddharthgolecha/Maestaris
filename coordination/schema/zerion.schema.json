@@ -50,7 +50,8 @@
           "properties": {
             "enabled": {"type": "boolean"},
             "accepted": {"enum": ["APPROVE"]},
-            "revise": {"enum": ["REQUEST_CHANGES"]}
+            "revise": {"enum": ["REQUEST_CHANGES"]},
+            "same_actor_fallback": {"enum": ["COMMENT"]}
           }
         }
       }
