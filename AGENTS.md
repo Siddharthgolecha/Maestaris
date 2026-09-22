@@ -103,8 +103,18 @@ Provider/runtime metadata is useful for debugging and dashboards, but it never o
 
 ### Runtime self-bootstrap
 
-A connected orchestrator should bootstrap its own worker-dispatcher schedules when the
-current runtime exposes schedule-management capabilities.
+The user creates or invokes **one orchestrator in the AI provider UI**. GitHub does not
+create that external provider session/task.
+
+A minimal invocation such as:
+
+```text
+Use Zerion on OWNER/REPO as orchestrator.
+```
+
+must be sufficient. The orchestrator reads this repository, discovers the desired
+topology, and bootstraps its own runtime's worker-dispatcher schedules when the current
+provider exposes schedule-management capabilities.
 
 The desired topology comes from `coordination/zerion.yaml`:
 
@@ -126,7 +136,8 @@ On orchestrator startup:
    schedules when safe.
 
 Live schedule objects remain provider-owned runtime state; GitHub stores only the
-desired topology and all durable task/evidence state.
+desired topology, instructions, and all durable task/evidence state. Never claim that
+GitHub itself created a ChatGPT/Gemini/Claude schedule.
 
 If the runtime cannot manage schedules itself, do not pretend that pools were
 created. Continue orchestration normally and report the smallest one-time setup action
