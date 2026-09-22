@@ -1,0 +1,16 @@
+schema: 1
+agent: theory-worker
+project: example-project
+role: research-and-theory
+dispatcher_pool: A
+status: active
+
+mailbox:
+  transport: pull_request
+  pr: null
+
+project_paths:
+  - examples/research-demo
+
+current_task: null
+current_objective: null
