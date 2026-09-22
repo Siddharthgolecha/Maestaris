@@ -3,11 +3,9 @@ worker: theory-worker
 project: example-project
 lifecycle: idle
 
-mailbox:
-  pr: null
-
 task:
   id: null
+  issue: null
   status: null
   priority: null
   task_pr: null
