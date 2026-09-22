@@ -61,5 +61,19 @@ pools:
   B:
     max_tasks_per_run: 1
 
+scheduler_bootstrap:
+  enabled: true
+  source: pools
+  cadence: hourly
+  reconcile_existing: true
+  instance_template: "zerion-{runtime}-pool-{pool}"
+  schedule_minutes:
+    chatgpt:
+      A: 22
+      B: 52
+    gemini-spark:
+      A: 37
+      B: 7
+
 projects:
   - example-project

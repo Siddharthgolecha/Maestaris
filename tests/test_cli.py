@@ -63,6 +63,16 @@ class ZerionProtocolV4Tests(unittest.TestCase):
                 "zerion:ready",
             )
             self.assertNotIn("assigned", registry["github"]["status_labels"])
+            self.assertTrue(registry["scheduler_bootstrap"]["enabled"])
+            self.assertEqual(registry["scheduler_bootstrap"]["source"], "pools")
+            self.assertEqual(
+                registry["scheduler_bootstrap"]["instance_template"],
+                "zerion-{runtime}-pool-{pool}",
+            )
+            self.assertEqual(
+                registry["scheduler_bootstrap"]["schedule_minutes"]["gemini-spark"],
+                {"A": 37, "B": 7},
+            )
 
             self.assertEqual(
                 project["active_workers"],

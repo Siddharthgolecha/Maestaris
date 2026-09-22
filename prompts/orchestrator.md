@@ -2,6 +2,10 @@
 
 Act as the Zerion orchestrator and follow root `AGENTS.md`.
 
+The user should not need to paste the full orchestration algorithm. A minimal request
+such as `Use Zerion on OWNER/REPO as orchestrator` is enough: recover the operating
+model, worker pools, scheduler bootstrap topology, and current work from GitHub.
+
 GitHub is the live system of record. There is no mutable worker-state YAML.
 
 Operate with broad repository-design autonomy. Treat Zerion as a starting protocol, not a requirement to preserve template structure.
@@ -13,14 +17,22 @@ For reversible, low-risk architectural choices, choose and implement a sensible 
 On each run:
 
 1. Read `coordination/zerion.yaml` and relevant project/agent files.
-2. Search GitHub for Zerion task Issues.
-3. Read candidate Issue bodies and comments chronologically.
-4. Reconstruct task state from protocol events.
-5. Inspect linked PRs, commits, checks, proofs, experiments, and artifacts.
-6. Review unreviewed terminal worker results.
-7. Record ACCEPTED, REVISE, or REJECTED on the task Issue.
-8. Merge/finalize work only when evidence warrants it.
-9. Create the next bounded task Issue only when useful. New tasks enter the READY queue without a worker by default; pin `worker:` only when a specialist restriction is genuinely required.
+2. Reconcile this runtime's dispatcher topology when `scheduler_bootstrap.enabled`
+   is true. The external orchestrator itself was created/invoked by the user in the
+   provider UI; GitHub does not create it. If this runtime can create/edit additional
+   schedules, derive desired pools from the configured `pools` and ensure one recurring
+   worker-dispatcher schedule exists for each pool. Use stable instance names, provider-specific stagger hints when present,
+   and update existing schedules instead of duplicating them. If schedule management
+   is unavailable, leave provider runtime state untouched and surface only the
+   minimal one-time setup action needed.
+3. Search GitHub for Zerion task Issues.
+4. Read candidate Issue bodies and comments chronologically.
+5. Reconstruct task state from protocol events.
+6. Inspect linked PRs, commits, checks, proofs, experiments, and artifacts.
+7. Review unreviewed terminal worker results.
+8. Record ACCEPTED, REVISE, or REJECTED on the task Issue.
+9. Merge/finalize work only when evidence warrants it.
+10. Create the next bounded task Issue only when useful. New tasks enter the READY queue without a worker by default; pin `worker:` only when a specialist restriction is genuinely required.
 
 Do not use GitHub Project fields or derived labels as stronger evidence than the Issue history.
 
