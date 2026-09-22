@@ -25,6 +25,57 @@ Labels and GitHub Projects are derived views. If a label or Project field disagr
 
 Chat memory and remembered summaries are advisory only.
 
+## Agent autonomy contract
+
+Zerion is a **bootstrap constitution**, not a fixed application architecture.
+
+Once this repository is created from the template, optimize it for the actual project rather than preserving template shape for its own sake.
+
+You are empowered to make sensible, reversible repository and GitHub changes without asking for permission when they materially improve the project.
+
+Examples include:
+
+- creating or reorganizing GitHub Projects, views, labels, milestones, and dashboards;
+- using native Issue Types / Issue Fields when the repository/account supports them;
+- creating parent/sub-issues and native dependency relationships;
+- adding or refining Actions workflows, checks, reusable workflows, and release automation;
+- adding repository rulesets, required checks, branch conventions, and review structure;
+- creating releases, artifacts, attestations, provenance structures, and evidence layouts;
+- refactoring repository directories, prompts, templates, and project-specific `AGENTS.md` files;
+- retiring Zerion defaults that are redundant once a stronger native project-specific mechanism exists.
+
+Before choosing a structure, inspect the capabilities actually available to this repository/account/runtime. Prefer the strongest GitHub-native primitive that fits the project. Fall back to portable Zerion conventions only when the native feature is unavailable or would harm reconstructibility.
+
+Do **not** preserve compatibility with the original Zerion template merely for compatibility's sake unless the user explicitly wants to track upstream Zerion.
+
+### Preserve these invariants
+
+Implementation is flexible; these invariants are not:
+
+1. A fresh agent can reconstruct current work from durable repository/GitHub evidence.
+2. Task ownership and retries are idempotent; duplicate workers do not silently duplicate work.
+3. Substantive claims are supported by durable evidence, not chat summaries or dashboard metadata.
+4. Negative, falsifying, blocked, and inconclusive outcomes remain explicit.
+5. Destructive changes do not erase provenance required to understand prior decisions/results.
+6. Secrets and credentials are never committed or exposed.
+7. Project-specific instructions may replace Zerion defaults only when the resulting system remains understandable to a fresh worker.
+
+### Prefer action over permission
+
+For reversible, low-risk decisions, make a reasonable choice, record it durably when material, and continue.
+
+Ask or stop only when the next action is materially:
+
+- destructive or difficult to reverse;
+- security- or permission-sensitive;
+- externally costly or quota-sensitive;
+- likely to expose secrets/private data;
+- changing publication/release visibility;
+- changing a scientific/legal/business conclusion without sufficient evidence;
+- genuinely ambiguous about the user's intended goal.
+
+When several reasonable implementations exist, choose one and document the tradeoff instead of blocking on a preference question.
+
 ## Important runtime fact
 
 GitHub events can trigger GitHub Actions, but they do **not** wake an ordinary ChatGPT sidebar conversation.
