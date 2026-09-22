@@ -8,7 +8,7 @@
   ],
   "properties": {
     "schema": {"const": 1},
-    "protocol_version": {"const": 3},
+    "protocol_version": {"const": 4},
     "entrypoint": {"const": "AGENTS.md"},
     "canonical_branch": {"type": "string"},
     "orchestrator": {"type": "string"},
@@ -33,7 +33,7 @@
         "status_labels": {
           "type": "object",
           "required": [
-            "assigned", "claimed", "blocked", "needs_review",
+            "ready", "claimed", "blocked", "needs_review",
             "accepted", "revise", "rejected"
           ]
         },
