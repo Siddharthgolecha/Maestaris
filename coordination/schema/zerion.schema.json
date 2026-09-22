@@ -2,7 +2,16 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Zerion Registry",
   "type": "object",
-  "required": ["schema", "protocol_version", "entrypoint", "canonical_branch", "orchestrator", "defaults", "pools", "projects"],
+  "required": [
+    "schema",
+    "protocol_version",
+    "entrypoint",
+    "canonical_branch",
+    "orchestrator",
+    "defaults",
+    "pools",
+    "projects"
+  ],
   "properties": {
     "schema": {"const": 1},
     "protocol_version": {"type": "integer", "minimum": 1},
@@ -14,6 +23,36 @@
       "required": ["ack_lease_hours"],
       "properties": {
         "ack_lease_hours": {"type": "integer", "minimum": 1}
+      }
+    },
+    "github": {
+      "type": "object",
+      "properties": {
+        "task_transport": {"enum": ["issue"]},
+        "task_issue": {
+          "type": "object",
+          "properties": {
+            "title_prefix": {"type": "string"},
+            "accepted_state_reason": {"enum": ["completed"]},
+            "rejected_state_reason": {"enum": ["not_planned"]}
+          }
+        },
+        "task_pull_request": {
+          "type": "object",
+          "properties": {
+            "draft_on_start": {"type": "boolean"},
+            "branch_prefix": {"type": "string"},
+            "link_keyword": {"type": "string"}
+          }
+        },
+        "native_reviews": {
+          "type": "object",
+          "properties": {
+            "enabled": {"type": "boolean"},
+            "accepted": {"enum": ["APPROVE"]},
+            "revise": {"enum": ["REQUEST_CHANGES"]}
+          }
+        }
       }
     },
     "pools": {
