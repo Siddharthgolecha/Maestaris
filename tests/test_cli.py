@@ -52,6 +52,10 @@ class ZerionCLITests(unittest.TestCase):
             self.assertEqual(registry["entrypoint"], "AGENTS.md")
             self.assertEqual(registry["protocol_version"], 2)
             self.assertEqual(registry["github"]["task_transport"], "issue")
+            self.assertEqual(
+                registry["github"]["native_reviews"]["same_actor_fallback"],
+                "COMMENT",
+            )
 
             for worker in project["active_workers"]:
                 agent_path = root / "coordination" / "agents" / f"{worker}.yaml"
