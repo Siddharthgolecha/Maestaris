@@ -2,9 +2,7 @@
 
 ## Agent entry point
 
-The root `AGENTS.md` is the normative bootstrap for AI agents.
-
-A fresh session reads:
+Root `AGENTS.md` is the normative bootstrap.
 
 ```text
 AGENTS.md
@@ -17,95 +15,87 @@ coordination/zerion.yaml
    +--> state/<worker>.yaml
                          |
                          v
-                     mailbox PR
+                  GitHub task Issue
                          |
                          v
-                  task PR / evidence
+                  draft/task PR
+                         |
+                         v
+               checks + durable evidence
 ```
 
-## Layers of durable truth
+## Native GitHub mapping
 
-Zerion separates durable information by purpose.
+Zerion maps its protocol onto GitHub primitives rather than recreating them.
 
-### 1. Configuration
+| Zerion concept | GitHub primitive |
+| --- | --- |
+| bounded task | Issue |
+| task conversation / audit log | Issue comments |
+| work in progress | Draft pull request |
+| substantive repository result | Pull request / commit |
+| verification | Actions / checks / artifacts |
+| review UX | Pull request review |
+| accepted terminal task | Issue closed as completed |
+| rejected task | Issue closed as not planned |
+| project/release grouping | optional milestone / GitHub Project |
 
-`coordination/zerion.yaml`, project files, and agent files define topology, identity, ownership, defaults, and canonical paths.
+Labels, milestones, Projects, assignees, and reactions may improve navigation but are not required for protocol correctness.
 
-### 2. Current-state index
+## Durable layers
 
-`coordination/state/<worker>.yaml` gives an agent a cheap machine-readable snapshot of the latest known worker/task state.
+### Configuration
 
-It is an index, not an immutable event log.
+`coordination/zerion.yaml`, project files, and agent files define topology and policy.
 
-### 3. Control-plane event log
+### Current-state index
 
-The long-lived mailbox PR records assignments, ACK claims, terminal worker reports, and orchestrator reviews in chronological order.
+`coordination/state/<worker>.yaml` summarizes the latest known task. For native transport, `task.issue` points to the control-plane Issue.
 
-### 4. Substantive evidence
+### Control-plane history
 
-Task branches and PRs, commits, CI, formal verification, experimental outputs, and other artifacts establish what actually happened.
+The GitHub task Issue body/comments record assignment, claim, terminal report, and orchestrator review.
 
-If a state index conflicts with newer durable mailbox or task evidence, use the newer evidence and repair the index. Chat memory never overrides durable GitHub evidence.
+### Substantive evidence
 
-## Control plane and work plane
+Linked task PRs, commits, CI/checks, formal verification, experiments, and artifacts establish what actually happened.
+
+## Lifecycle
 
 ```text
-Mailbox PR = control plane
-Task PR    = work plane
+Issue opened / ASSIGNED
+        |
+        v
+ACK comment / claimed
+        |
+        v
+draft task PR + work
+        |
+        v
+DONE | BLOCKED | NEEDS_REVIEW
+        |
+        v
+orchestrator evidence review
+        |
+        +--> ACCEPTED -> complete/merge -> close Issue completed
+        +--> REVISE   -> keep Issue open
+        +--> REJECTED -> close Issue not planned
 ```
 
-Mailbox PRs should not contain substantive project changes.
+## Native PR reviews
 
-## Worker identity
+When a task PR exists, the orchestrator may also submit a native GitHub review. This improves GitHub UX but does not replace the Issue-side `[ORCHESTRATOR-REVIEW:v1]` protocol event.
 
-Worker identity is configuration, not runtime identity. A generic dispatcher may execute work as a named specialist worker only after reading the worker's agent file, state index, and mailbox.
+## Idempotency and ACK leases
 
-## Bounded assignments
+Every task has a stable `task_id`. ACK comments include a dispatcher, timestamp, and lease duration.
 
-Workers execute the assigned objective and completion conditions. They do not invent the next major project objective. The orchestrator owns critical-path selection.
+A worker skips a task when a terminal result already exists or another unexpired ACK owns it.
 
-## Idempotency
+## Legacy transport
 
-Every task has a stable `task_id`. A dispatcher skips work when the task already has a terminal result or another valid ACK lease.
-
-## ACK leases
-
-An ACK contains a claim timestamp and lease duration. The default comes from `coordination/zerion.yaml`.
-
-If a lease expires without a terminal result, the orchestrator may mark the claim stale and release or reassign it.
-
-## State transitions
-
-The normal current-state lifecycle is:
-
-```text
-idle
-  -> assigned
-  -> claimed
-  -> done | blocked | needs_review
-  -> idle | assigned | dormant
-```
-
-Mailbox events remain the audit history for those transitions.
-
-## Terminal states
-
-Worker terminal states:
-
-```text
-DONE
-BLOCKED
-NEEDS_REVIEW
-```
-
-Orchestrator review states:
-
-```text
-ACCEPTED
-REVISE
-REJECTED
-```
+`legacy_pull_request_mailbox` remains valid for older repositories. It is a compatibility path, not the v0.4 default.
 
 ## Dormancy
 
-Workers may be `dormant` when no useful work is unblocked. Zerion optimizes useful progress, not agent activity.
+Workers may be dormant when no useful work is unblocked. Zerion optimizes critical-path progress, not agent activity.
