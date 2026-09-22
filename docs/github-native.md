@@ -31,9 +31,44 @@ Do not duplicate information GitHub already records reliably. In particular, lin
 
 When the connected runtime exposes them reliably, prefer native sub-issues for task decomposition and native blocked-by/blocking relationships for scheduling. They give humans and GitHub tooling a navigable graph without inventing another graph store.
 
-Zerion must still tolerate runtimes that cannot read or mutate these APIs. Stable `task_id` values and `depends_on` metadata are the portable fallback. A native relationship should mirror that intent rather than create a second independent source of truth.
+Zerion must still tolerate runtimes that cannot read or mutate these APIs. Stable `task_id` values and `depends_on` metadata are the portable fallback. Native relationships mirror that portable intent; they do not replace it as the reconstructible protocol.
 
-If native and fallback dependency data disagree, do not silently claim the task. Reconcile the mismatch or report a precise blocker.
+### Mapping
+
+| Zerion intent | Portable representation | Native mirror when available |
+| --- | --- | --- |
+| stable identity | `task_id: child-001` | Issue number/URL is navigation only |
+| decomposition | child task has its own `task_id`; parent identity remains durable in task text when needed | parent/sub-issue relationship |
+| prerequisite | `depends_on: [parent-001]` | child is blocked by the prerequisite Issue; prerequisite blocks child |
+| no prerequisite | `depends_on: []` | no blocked-by edge |
+
+A dependency edge is directional: if task B lists task A in `depends_on`, B is **blocked by A**, and A is **blocking B**. The dependency is satisfied only when the prerequisite has a terminal accepted outcome according to the Zerion Issue history; merely closing the GitHub Issue is not enough if the protocol history says REJECTED, REVISE, or otherwise unresolved.
+
+Sub-issues express decomposition, not automatically execution ordering. A child being a sub-issue of a parent does not imply that either blocks the other. Add a dependency only when there is a real prerequisite.
+
+### Capability detection
+
+Treat hierarchy and dependency support as separate capabilities. A runtime may be able to read native relationships without being able to create or remove them.
+
+Before relying on a native relationship, verify that the current connector/API can read the relevant endpoint. Before mutating one, verify that the runtime exposes a supported write operation. Do not infer write support from successful reads.
+
+The GitHub connector used by Zerion's ordinary chat runtime can currently read repository issue `sub_issues` and `dependencies/blocked_by` endpoints. Its exposed mutation surface does not provide corresponding relationship writes. In that environment workers therefore **read native relationships as validation/navigation evidence but keep `depends_on` as the scheduling source available to all workers**. A different runtime with reliable relationship-write support may mirror the portable metadata natively.
+
+### Reconciliation and fallback
+
+For every candidate task:
+
+1. parse `task_id` and `depends_on` from the Issue assignment;
+2. resolve each portable dependency to its Zerion task Issue;
+3. if native dependency reads are available, inspect the native blocked-by edges;
+4. if both representations agree, use the graph normally;
+5. if portable metadata contains an unresolved prerequisite but the native edge is missing, **remain blocked according to portable metadata** and optionally repair the native mirror when write support exists;
+6. if a native blocked-by edge exists that portable metadata does not declare, do not silently claim the task—report/reconcile the unexpected edge first;
+7. if native APIs are unavailable, continue entirely from portable metadata.
+
+This asymmetry is intentional: an optional native mirror must never make a portable dependency disappear. It also prevents a runtime with richer GitHub access from creating scheduling state that ordinary workers cannot reconstruct.
+
+Migration is therefore additive. Existing `depends_on` arrays remain valid. A capable migration tool/runtime may create equivalent native edges and sub-issue links, but it must not delete the portable identifiers merely because the mirror was created.
 
 ## Milestones
 
