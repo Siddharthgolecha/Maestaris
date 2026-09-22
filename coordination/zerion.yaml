@@ -1,0 +1,17 @@
+schema: 1
+protocol_version: 1
+entrypoint: AGENTS.md
+canonical_branch: main
+orchestrator: orchestrator
+
+defaults:
+  ack_lease_hours: 3
+
+pools:
+  A:
+    max_tasks_per_run: 1
+  B:
+    max_tasks_per_run: 1
+
+projects:
+  - example-project
