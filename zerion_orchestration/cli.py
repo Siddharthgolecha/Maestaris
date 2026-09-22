@@ -14,6 +14,7 @@ from .core import (
     build_registry,
     build_state,
     dump_yaml,
+    ensure_agents_entrypoint,
     ensure_layout,
     load_yaml,
     validate_name,
@@ -38,6 +39,7 @@ def _maybe_repo(root: Path, requested: str | None) -> str:
 def command_init(args: argparse.Namespace) -> int:
     root = _root(args.root)
     ensure_layout(root)
+    created_agents_md = ensure_agents_entrypoint(root)
     validate_name(args.project, "project")
     for role in args.workers:
         validate_name(role, "worker role")
@@ -85,6 +87,8 @@ def command_init(args: argparse.Namespace) -> int:
     dump_yaml(registry_path, registry)
 
     print(f"Initialized Zerion project '{args.project}' with {len(workers)} worker(s).")
+    if created_agents_md:
+        print("Created root AGENTS.md entry point.")
     print(f"Project registry: {project_path.relative_to(root)}")
 
     if args.mailboxes:
