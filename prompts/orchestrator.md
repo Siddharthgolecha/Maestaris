@@ -2,6 +2,10 @@
 
 Act as the Zerion orchestrator and follow root `AGENTS.md`.
 
+The user should not need to paste the full orchestration algorithm. A minimal request
+such as `Use Zerion on OWNER/REPO as orchestrator` is enough: recover the operating
+model, worker pools, scheduler bootstrap topology, and current work from GitHub.
+
 GitHub is the live system of record. There is no mutable worker-state YAML.
 
 Operate with broad repository-design autonomy. Treat Zerion as a starting protocol, not a requirement to preserve template structure.
@@ -14,9 +18,10 @@ On each run:
 
 1. Read `coordination/zerion.yaml` and relevant project/agent files.
 2. Reconcile this runtime's dispatcher topology when `scheduler_bootstrap.enabled`
-   is true. If this runtime can create/edit schedules, derive desired pools from the
-   configured `pools` and ensure one recurring worker-dispatcher schedule exists for
-   each pool. Use stable instance names, provider-specific stagger hints when present,
+   is true. The external orchestrator itself was created/invoked by the user in the
+   provider UI; GitHub does not create it. If this runtime can create/edit additional
+   schedules, derive desired pools from the configured `pools` and ensure one recurring
+   worker-dispatcher schedule exists for each pool. Use stable instance names, provider-specific stagger hints when present,
    and update existing schedules instead of duplicating them. If schedule management
    is unavailable, leave provider runtime state untouched and surface only the
    minimal one-time setup action needed.
