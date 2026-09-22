@@ -1,0 +1,17 @@
+name: Zerion protocol
+
+on:
+  issues:
+    types: [opened, edited, reopened, closed]
+  issue_comment:
+    types: [created, edited, deleted]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  zerion:
+    uses: Siddharthgolecha/Zerion/.github/workflows/reusable-zerion.yml@v0.6.1
+    with:
+      zerion_ref: v0.6.1

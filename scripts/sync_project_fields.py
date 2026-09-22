@@ -9,8 +9,10 @@ from urllib import error, request
 
 import yaml
 
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT))
+RUNTIME_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(os.environ.get("ZERION_PROJECT_ROOT", str(RUNTIME_ROOT))).resolve()
+sys.path.insert(0, str(RUNTIME_ROOT))
+sys.path.insert(0, str(RUNTIME_ROOT / "scripts"))
 
 from zerion_orchestration.project_sync import project_field_values
 
@@ -148,7 +150,9 @@ def main() -> int:
         print("GITHUB_EVENT_PATH is unavailable; skipping Project sync.")
         return 0
 
-    registry = yaml.safe_load((ROOT / "coordination" / "zerion.yaml").read_text())
+    registry = yaml.safe_load(
+        (PROJECT_ROOT / "coordination" / "zerion.yaml").read_text()
+    )
     project_cfg = ((registry.get("github") or {}).get("projects") or {})
     field_sync = project_cfg.get("field_sync") or {}
 
@@ -187,8 +191,6 @@ def main() -> int:
         print("Repository/GITHUB_TOKEN unavailable; skipping Project sync.")
         return 0
 
-    # Read comments with the repository token. Project mutation uses the separate
-    # token because user/org Projects may require permissions beyond GITHUB_TOKEN.
     from sync_github_issue import GitHubAPI
 
     comments = GitHubAPI(repo, github_token).comments(int(issue["number"]))

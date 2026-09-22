@@ -9,8 +9,9 @@ from urllib import error, parse, request
 
 import yaml
 
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT))
+RUNTIME_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(os.environ.get("ZERION_PROJECT_ROOT", str(RUNTIME_ROOT))).resolve()
+sys.path.insert(0, str(RUNTIME_ROOT))
 
 from zerion_orchestration.protocol import (
     desired_managed_labels,
@@ -132,7 +133,9 @@ def main() -> int:
     title = issue.get("title") or ""
     body = issue.get("body") or ""
 
-    registry = yaml.safe_load((ROOT / "coordination" / "zerion.yaml").read_text())
+    registry = yaml.safe_load(
+        (PROJECT_ROOT / "coordination" / "zerion.yaml").read_text()
+    )
     github = registry["github"]
     prefix = str(github["task_title_prefix"])
 
@@ -162,10 +165,7 @@ def main() -> int:
         {"labels": sorted(final_labels)},
     )
 
-    print(
-        "Zerion labels synchronized: "
-        + ", ".join(sorted(desired))
-    )
+    print("Zerion labels synchronized: " + ", ".join(sorted(desired)))
     return 0
 
 

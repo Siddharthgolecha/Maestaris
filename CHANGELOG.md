@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.1
+
+- Add a reusable GitHub workflow for consumer repositories to validate Zerion protocol events and synchronize derived Issue labels.
+- Allow Zerion runtime scripts to operate against an external consumer repository root without copying implementation scripts into that repository.
+- Add optional ProjectV2 field synchronization inputs to the reusable workflow.
+- Document stable tag pinning, upgrade policy, permissions, and a minimal consumer integration.
+
 ## 0.6.0
 
 - Introduce Zerion protocol v4 queue semantics.
