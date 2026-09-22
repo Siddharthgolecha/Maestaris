@@ -291,6 +291,13 @@ A worker identity is not the same thing as a scheduler or provider. Use a unique
 
 Staggering provider schedules reduces unnecessary races while still providing failover. For example, ChatGPT and Gemini Spark can check the same pool at different points in the hour.
 
+For runtimes that support schedule management, Zerion now treats the **orchestrator as
+the bootstrap entrypoint**: create/connect one orchestrator, and it derives the desired
+worker pools from `coordination/zerion.yaml` and creates/reconciles its own dispatcher
+schedules. Gemini Spark supports conversational schedule management, so a Gemini
+orchestrator can bootstrap its Pool A/B schedules without the user manually creating
+each one.
+
 See [Multi-AI orchestration](docs/runtime/multi-ai-orchestration.md).
 
 ## Repository layout
