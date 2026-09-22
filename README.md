@@ -126,7 +126,7 @@ ChatGPT schedule / user invocation
 
 That is why Zerion is built around **safe polling and idempotency**, not fake webhook-driven chat execution.
 
-## The v0.5 model
+## The current model
 
 Zerion stores stable configuration in the repository and live orchestration state in GitHub itself.
 
@@ -349,7 +349,7 @@ Dogfooding showed that this created the wrong abstraction:
 - parallel workers could contend on state files;
 - AI runtimes with GitHub connector access may not have shell GitHub access.
 
-v0.5 therefore makes GitHub the single live state machine.
+Zerion therefore makes GitHub the single live state machine. Protocol v4 additionally separates **work availability** from **worker ownership**: an open task is READY; an ACK creates the active owner lease.
 
 ## Design principles
 
