@@ -79,7 +79,7 @@ def ensure_agents_entrypoint(root: Path) -> bool:
 def build_registry() -> dict[str, Any]:
     return {
         "schema": 1,
-        "protocol_version": 3,
+        "protocol_version": 4,
         "entrypoint": "AGENTS.md",
         "canonical_branch": "main",
         "orchestrator": "orchestrator",
@@ -89,7 +89,7 @@ def build_registry() -> dict[str, Any]:
             "task_title_prefix": "[Zerion task]",
             "task_label": "zerion:task",
             "status_labels": {
-                "assigned": "zerion:assigned",
+                "ready": "zerion:ready",
                 "claimed": "zerion:claimed",
                 "blocked": "zerion:blocked",
                 "needs_review": "zerion:needs-review",
@@ -184,7 +184,7 @@ def validate_repository(root: Path) -> ValidationResult:
     if legacy:
         sample = ", ".join(str(p.relative_to(root)) for p in legacy[:4])
         errors.append(
-            "protocol v3 removed mutable state/mailbox files; migrate or delete: "
+            "protocol v4 removed mutable state/mailbox files; migrate or delete: "
             + sample
         )
 
