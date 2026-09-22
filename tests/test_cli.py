@@ -31,6 +31,7 @@ class ZerionCLITests(unittest.TestCase):
             registry_path = root / "coordination" / "zerion.yaml"
             self.assertTrue(project_path.exists())
             self.assertTrue(registry_path.exists())
+            self.assertTrue((root / "AGENTS.md").exists())
 
             project = yaml.safe_load(project_path.read_text())
             registry = yaml.safe_load(registry_path.read_text())
@@ -68,6 +69,27 @@ class ZerionCLITests(unittest.TestCase):
             self.assertEqual(json_code, 0)
             self.assertIn('"states"', json_status.getvalue())
             self.assertIn('"registry"', json_status.getvalue())
+
+    def test_existing_agents_md_is_preserved(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            agents_path = root / "AGENTS.md"
+            agents_path.write_text("# Existing instructions\nDo not overwrite me.\n")
+
+            self.assertEqual(
+                main(
+                    [
+                        "--root", tmp, "init", "alpha",
+                        "--workers", "theory",
+                        "--repository", "example/alpha",
+                    ]
+                ),
+                0,
+            )
+            self.assertEqual(
+                agents_path.read_text(),
+                "# Existing instructions\nDo not overwrite me.\n",
+            )
 
     def test_duplicate_project_is_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
