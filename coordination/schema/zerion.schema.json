@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Zerion Registry",
+  "type": "object",
+  "required": ["schema", "protocol_version", "entrypoint", "canonical_branch", "orchestrator", "defaults", "pools", "projects"],
+  "properties": {
+    "schema": {"const": 1},
+    "protocol_version": {"type": "integer", "minimum": 1},
+    "entrypoint": {"const": "AGENTS.md"},
+    "canonical_branch": {"type": "string"},
+    "orchestrator": {"type": "string"},
+    "defaults": {
+      "type": "object",
+      "required": ["ack_lease_hours"],
+      "properties": {
+        "ack_lease_hours": {"type": "integer", "minimum": 1}
+      }
+    },
+    "pools": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["max_tasks_per_run"],
+        "properties": {
+          "max_tasks_per_run": {"type": "integer", "minimum": 1}
+        }
+      }
+    },
+    "projects": {
+      "type": "array",
+      "items": {"type": "string"},
+      "uniqueItems": true
+    }
+  }
+}
