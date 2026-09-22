@@ -5,9 +5,8 @@ role: implementation-and-testing
 dispatcher_pool: B
 status: active
 
-mailbox:
-  transport: pull_request
-  pr: null
+control_plane:
+  transport: github_issue
 
 project_paths:
   - examples/research-demo
