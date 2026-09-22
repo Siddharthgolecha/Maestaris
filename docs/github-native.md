@@ -1,91 +1,56 @@
 # GitHub-native integration
 
-Zerion v0.4 uses GitHub itself as the orchestration substrate.
+Zerion uses GitHub as the live coordination substrate.
 
-## Required core primitives
+## Issues
 
-### Issues
+Each bounded task is an Issue.
 
-A Zerion task is a GitHub Issue.
+The body is the assignment. Comments form the event log.
 
-The Issue body carries the orchestrator assignment. Comments carry ACKs, terminal worker reports, and orchestrator review events.
+## Pull requests
 
-The Issue number is a native stable reference and is indexed in `coordination/state/<worker>.yaml`.
+Repository-changing work belongs in a linked task PR. Opening it as a draft early exposes work in progress.
 
-### Pull requests
+A PR is work-plane evidence, not a mailbox and not a mechanism for waking ChatGPT.
 
-Repository-changing work belongs in a task PR. Open it as a draft early so work in progress is visible.
+## Actions
 
-Link the PR to the task Issue. Prefer a closing keyword such as `Resolves #123` when merge should complete the task.
+GitHub Actions react immediately to repository events and are ideal for mechanical work:
 
-### Actions and checks
+- protocol validation;
+- label synchronization;
+- tests/checks;
+- artifact generation.
 
-CI/checks are first-class durable evidence. Workers should reference exact checks, workflow runs, proof logs, or artifacts in terminal reports.
+Actions do not directly invoke an ordinary ChatGPT sidebar conversation.
 
-### Issue close reasons
+## Labels
 
-- ACCEPTED -> close as completed after finalization.
-- REVISE -> leave open.
-- REJECTED -> close as not planned.
+Zerion derives managed labels from the Issue history. By default:
+
+- `zerion:task`
+- `zerion:assigned`
+- `zerion:claimed`
+- `zerion:blocked`
+- `zerion:needs-review`
+- `zerion:accepted`
+- `zerion:revise`
+- `zerion:rejected`
+- `priority:<value>`
+
+Unmanaged user labels are preserved.
 
 ## Native PR reviews
 
-When a task has a PR, an orchestrator can use GitHub's review interface:
+APPROVE may mirror ACCEPTED and REQUEST_CHANGES may mirror REVISE.
 
-- APPROVE can mirror Zerion ACCEPTED.
-- REQUEST_CHANGES can mirror Zerion REVISE.
+GitHub prevents a PR author from approving their own PR. Same-identity setups should use COMMENT or skip native review; the Issue-side Zerion review remains canonical.
 
-The task Issue still receives the Zerion review event so every task has one consistent control-plane history.
+## Projects
 
-GitHub does not allow a pull-request author to approve their own PR. In single-user or same-identity agent setups, use a native `COMMENT` review (or no native review) and keep the Issue-side Zerion review event canonical.
-
-## Optional GitHub features
-
-### Labels
-
-Labels are useful for search and dashboards. Suggested conventions:
-
-- `zerion`
-- `zerion:task`
-- `zerion:blocked`
-- `priority:P0`
-- `priority:P1`
-
-Labels are optional because not every connected runtime exposes label administration.
-
-### Milestones
-
-Milestones can map to releases, research phases, or launch gates.
-
-### GitHub Projects
-
-Projects can provide board/table/roadmap views across Issues and PRs. Treat Projects as a view, not the only copy of protocol state.
-
-### Assignees
-
-Use assignees for humans or GitHub identities when meaningful. Zerion worker identity remains in repository configuration because AI workers may not own GitHub accounts.
-
-### Reactions
-
-Reactions may be used as lightweight UX signals but must not replace structured ACK/review records.
-
-### Rulesets and branch protection
-
-Repositories can require CI, reviews, signed commits, or protected branches. Zerion should consume those checks as evidence rather than duplicating governance logic.
+Projects is an optional derived dashboard. See `docs/github-projects.md`.
 
 ## Connected AI runtimes
 
-A key v0.4 dogfood result is that an AI runtime may have a connected GitHub interface while shell-level `git clone` or `gh` access is unavailable.
-
-Therefore:
-
-- the core protocol must be operable through GitHub APIs/connectors;
-- shell GitHub CLI is optional;
-- default Issue-native operation does not depend on `gh`;
-- legacy PR-mailbox bootstrap is the only CLI path that currently requires `gh`.
-
-## Legacy PR mailboxes
-
-v0.3 and earlier may contain permanent draft PR mailboxes. They remain readable and valid under `legacy_pull_request_mailbox` transport.
-
-New projects should use task Issues instead.
+An AI runtime may have GitHub connector/API access while its shell cannot reach github.com. Zerion therefore makes shell `git`/`gh` optional for agent operation.
