@@ -1,24 +1,37 @@
 # Zerion agent operating instructions
 
-This repository uses Zerion's repository-first, GitHub-native orchestration protocol.
+This repository uses Zerion's GitHub-native orchestration protocol.
 
-**Start here.** A fresh AI session must be able to reconstruct its role and current work from GitHub without depending on prior chat history.
+**Core rule:** chats reason; GitHub remembers.
 
-## Source-of-truth order
+A fresh AI session must be able to reconstruct its role and current work from this repository plus GitHub Issues/PRs without relying on earlier chat history.
+
+## What is canonical
 
 Use durable evidence in this order:
 
-1. this `AGENTS.md` for operating rules;
-2. `coordination/zerion.yaml` for global protocol, GitHub settings, pools, defaults, and registered projects;
-3. `coordination/projects/<project>.yaml` for project membership and canonical paths;
-4. `coordination/agents/<worker>.yaml` for worker identity and pool ownership;
-5. `coordination/state/<worker>.yaml` as the fast current-state index;
-6. the current Zerion **GitHub task Issue** as the chronological control-plane object;
-7. linked task PRs, commits, checks, proofs, experiments, and artifacts as substantive evidence.
+1. this `AGENTS.md`;
+2. `coordination/zerion.yaml`;
+3. the relevant `coordination/projects/<project>.yaml`;
+4. the relevant `coordination/agents/<worker>.yaml`;
+5. GitHub task Issues and their comments;
+6. linked pull requests, commits, Actions/checks, proofs, experiments, and artifacts.
 
-The state file is an index, not final evidence. If it disagrees with newer GitHub Issue/PR evidence, use the newer durable evidence and repair the index.
+There is intentionally **no mutable worker-state YAML** in protocol v3.
+
+GitHub task Issues and their comments are the live control plane.
+
+Labels and GitHub Projects are derived views. If a label or Project field disagrees with the Issue history, the Issue history wins.
 
 Chat memory and remembered summaries are advisory only.
+
+## Important runtime fact
+
+GitHub events can trigger GitHub Actions, but they do **not** wake an ordinary ChatGPT sidebar conversation.
+
+For ordinary ChatGPT usage, orchestrator and worker chats are invoked manually or by ChatGPT scheduling and **poll GitHub** for work.
+
+Actions may validate protocol records, synchronize labels, run tests, and feed dashboards. They are not a substitute for waking the ChatGPT worker.
 
 ## Resolve your role
 
@@ -29,102 +42,116 @@ Use an explicitly supplied role or worker identity when one is given.
 - **Named specialist:** read `prompts/worker.md`.
 - **Auditor:** read `prompts/auditor.md`.
 
-If no worker identity is supplied and the request is project-level coordination, default to the orchestrator role. Do not invent a specialist identity from memory.
-
-## Native control plane
-
-The preferred Zerion control-plane object is a GitHub Issue whose title begins with the configured prefix, normally:
-
-```text
-[Zerion task]
-```
-
-The Issue body contains the `[ORCHESTRATOR:v1]` assignment. Issue comments contain ACKs, terminal worker reports, and orchestrator review events.
-
-Do not create permanent PRs merely to hold coordination comments.
+If the request is project-level coordination and no specialist identity is supplied, default to orchestrator.
 
 ## Deterministic bootstrap
 
 Before substantive work:
 
 1. Read `coordination/zerion.yaml`.
-2. Resolve the relevant project.
-3. Read the project registry and relevant worker agent/state files.
-4. If `state.task.issue` is set, inspect that Issue directly.
-5. Otherwise search open Zerion task Issues for the project/worker and inspect candidate bodies/comments before claiming one.
-6. Check the stable `task_id` for:
-   - an existing terminal worker result;
-   - an existing later orchestrator review;
-   - another dispatcher's unexpired ACK lease;
-   - unmet dependencies.
-7. Read relevant project `canonical_paths`.
-8. Inspect linked task PRs, commits, checks, proofs, experiments, or artifacts.
-9. Only then act.
+2. Resolve the relevant project and read its project YAML.
+3. Resolve the relevant worker(s) and read their agent YAML.
+4. Search GitHub for open Issues labeled with the configured task label, normally `zerion:task`.
+5. Inspect candidate Issue bodies and select tasks whose structured `project` and `worker` fields match.
+6. Read Issue comments chronologically.
+7. Derive live task state from the latest protocol events:
+   - assignment body -> assigned;
+   - ACK -> claimed;
+   - BLOCKED -> blocked;
+   - DONE / NEEDS_REVIEW -> needs review;
+   - ACCEPTED -> accepted;
+   - REVISE -> revise;
+   - REJECTED -> rejected.
+8. Check for an unexpired ACK owned by another dispatcher and unmet dependencies.
+9. Read relevant project `canonical_paths`.
+10. Inspect linked PRs/checks/artifacts before extending or accepting a result.
+11. Only then act.
+
+If labels lag the Issue history, trust the history.
 
 ## Task lifecycle
 
 ### Assignment
 
-The orchestrator creates a task Issue with `[ORCHESTRATOR:v1]`, then updates the worker state index to `assigned` and records the Issue number in `task.issue`.
+The orchestrator creates a GitHub Issue titled with the configured prefix, normally:
+
+```text
+[Zerion task] <bounded objective>
+```
+
+The Issue body begins with `[ORCHESTRATOR:v1]` and includes a stable `task_id`, project, worker, priority, dependencies, objective, constraints, and completion conditions.
 
 ### Claim
 
-The worker posts a `[WORKER:<name>:v1]` ACK comment on the Issue before substantive work and updates state to `claimed`.
+A worker posts `[WORKER:<name>:v1]` with `status: ACK` on the Issue before substantive work.
+
+ACK contains dispatcher, claim timestamp, and lease duration.
 
 ### Work
 
-For repository changes, create a task branch using the configured prefix, normally:
+For repository-changing work:
 
-```text
-zerion/task/<issue-number>-<short-slug>
-```
+1. create a branch using the configured prefix, normally `zerion/task/<issue>-<slug>`;
+2. open a **draft PR early**;
+3. link it to the task Issue;
+4. use a closing keyword such as `Resolves #123` when merge should complete the task.
 
-Open a **draft pull request early** and link it to the Issue. Prefer a GitHub closing keyword such as `Resolves #123` when merge should complete the task.
+Draft PRs exist to expose work in progress and evidence. They are **not** mailbox/event triggers for ChatGPT.
 
-Substantive work belongs on the task branch/PR, never in coordination-only branches.
+### Terminal worker report
 
-### Terminal worker result
+Post one of:
 
-Post `DONE`, `BLOCKED`, or `NEEDS_REVIEW` on the task Issue with exact durable evidence. Synchronize the state index.
+- `DONE`
+- `BLOCKED`
+- `NEEDS_REVIEW`
+
+on the task Issue with exact durable evidence.
 
 ### Review
 
-The orchestrator inspects actual evidence. When a task PR exists, native GitHub PR reviews are useful:
+The orchestrator inspects actual evidence and posts `[ORCHESTRATOR-REVIEW:v1]`:
 
-- `APPROVE` may mirror `ACCEPTED`;
-- `REQUEST_CHANGES` may mirror `REVISE`.
+- `ACCEPTED`
+- `REVISE`
+- `REJECTED`
 
-The Zerion `[ORCHESTRATOR-REVIEW:v1]` event on the task Issue remains the protocol record so non-PR tasks and PR tasks have one consistent control-plane history.
-
-- `ACCEPTED`: close the Issue as **completed** after accepted work is integrated or otherwise finalized.
-- `REVISE`: leave the Issue open.
-- `REJECTED`: close the Issue as **not planned** after recording why.
+Native GitHub PR reviews may mirror this decision when useful. GitHub does not allow a PR author to approve their own PR; same-identity setups may use a COMMENT review or skip native review.
 
 ## Idempotency
 
-Every task has a stable `task_id`. Repeated polling or repeated user invocation must be safe.
+Every task has a stable `task_id`.
 
-Never duplicate work when a terminal result or valid ACK already exists.
+Repeated polling is safe only when the worker checks the Issue history first.
 
-## GitHub-native features
+Do not duplicate work when:
 
-Use GitHub features when they add durable meaning:
+- the task already has a terminal worker report;
+- the task already has a later orchestrator review;
+- another dispatcher owns an unexpired ACK;
+- dependencies are unresolved.
 
-- Issues for task lifecycle and discussion;
-- draft PRs for work in progress;
-- PR reviews for human/agent review UX;
-- Actions/checks for verification;
-- closing keywords for Issue↔PR linkage;
-- Issue close reasons for terminal lifecycle;
-- milestones/Projects/labels as optional views, not required protocol state.
+## GitHub Projects
 
-## Legacy PR mailboxes
+GitHub Projects is a **dashboard**, not canonical state.
 
-Projects using `legacy_pull_request_mailbox` remain supported for migration. Follow their existing mailbox PR history and compatibility fields. Do not create new legacy mailboxes unless explicitly required.
+Zerion Actions derive labels such as:
+
+- `zerion:task`
+- `zerion:assigned`
+- `zerion:claimed`
+- `zerion:blocked`
+- `zerion:needs-review`
+- `zerion:accepted`
+- `priority:P0`
+
+A Project can auto-add `zerion:task` Issues and use those labels for views. Project status/fields must never be required to reconstruct a task.
 
 ## Blocking and dormancy
 
-A precise blocker is a valid result. Dormancy is healthy. Do not invent tasks merely to keep workers active.
+A precise blocker is a valid result.
+
+Dormancy is healthy. Do not invent work merely to keep workers active.
 
 ## Repository-local instructions
 
