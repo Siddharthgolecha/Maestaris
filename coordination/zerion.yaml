@@ -1,11 +1,26 @@
 schema: 1
-protocol_version: 1
+protocol_version: 2
 entrypoint: AGENTS.md
 canonical_branch: main
 orchestrator: orchestrator
 
 defaults:
   ack_lease_hours: 3
+
+github:
+  task_transport: issue
+  task_issue:
+    title_prefix: "[Zerion task]"
+    accepted_state_reason: completed
+    rejected_state_reason: not_planned
+  task_pull_request:
+    draft_on_start: true
+    branch_prefix: zerion/task
+    link_keyword: Resolves
+  native_reviews:
+    enabled: true
+    accepted: APPROVE
+    revise: REQUEST_CHANGES
 
 pools:
   A:
