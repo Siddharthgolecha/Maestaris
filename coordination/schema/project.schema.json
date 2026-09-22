@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Zerion Project",
   "type": "object",
-  "required": ["schema", "project", "title", "status", "repository", "active_workers", "mailboxes"],
+  "required": ["schema", "project", "title", "status", "repository", "active_workers"],
   "properties": {
     "schema": {"const": 1},
     "project": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
@@ -13,8 +13,14 @@
     "canonical_paths": {"type": "array", "items": {"type": "string"}},
     "orchestrator": {"type": ["string", "null"]},
     "auditor": {"type": ["string", "null"]},
+    "control_plane": {
+      "type": "object",
+      "properties": {
+        "transport": {"enum": ["github_issue", "legacy_pull_request_mailbox"]}
+      }
+    },
     "active_workers": {"type": "array", "items": {"type": "string"}},
     "dormant_workers": {"type": "array", "items": {"type": "string"}},
-    "mailboxes": {"type": "object"}
+    "mailboxes": {"type": "object", "description": "Deprecated legacy PR-mailbox mapping."}
   }
 }

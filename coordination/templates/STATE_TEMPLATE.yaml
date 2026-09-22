@@ -3,11 +3,9 @@ worker: project-worker
 project: my-project
 lifecycle: idle
 
-mailbox:
-  pr: null
-
 task:
   id: null
+  issue: null
   status: null
   priority: null
   task_pr: null

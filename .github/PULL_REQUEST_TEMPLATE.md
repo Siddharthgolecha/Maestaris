@@ -1,11 +1,25 @@
+## Zerion task
+
+Zerion-Task: #<issue-number>
+
+Use a GitHub closing keyword when this PR should complete the task on merge, for example:
+
+`Resolves #<issue-number>`
+
+For long-running work, open the PR as a **draft** soon after ACK so the work plane is visible without pretending it is complete.
+
 ## Summary
 
-## Why this belongs in core Zerion vs a runtime adapter
+## Durable evidence
+
+## Verification
+
+## Claim / classification changes
 
 ## Idempotency / recovery impact
 
-## Validation
-
-- [ ] `python scripts/validate_config.py`
-- [ ] Fresh worker can reconstruct required state from repository
+- [ ] Linked to the correct Zerion task Issue
+- [ ] `zerion validate`
+- [ ] Relevant tests / CI / proof / experiment passed
+- [ ] Fresh worker can reconstruct required state from repository + GitHub Issue/PR evidence
 - [ ] No secrets or project-specific private data added

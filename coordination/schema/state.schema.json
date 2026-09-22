@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Zerion Worker State",
   "type": "object",
-  "required": ["schema", "worker", "project", "lifecycle", "mailbox", "task", "claim", "result", "last_review"],
+  "required": ["schema", "worker", "project", "lifecycle", "task", "claim", "result", "last_review"],
   "properties": {
     "schema": {"const": 1},
     "worker": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
@@ -12,14 +12,15 @@
     },
     "mailbox": {
       "type": "object",
-      "required": ["pr"],
+      "description": "Deprecated legacy PR-mailbox index.",
       "properties": {"pr": {"type": ["integer", "null"], "minimum": 1}}
     },
     "task": {
       "type": "object",
-      "required": ["id", "status", "priority", "task_pr"],
+      "required": ["id", "issue", "status", "priority", "task_pr"],
       "properties": {
         "id": {"type": ["string", "null"]},
+        "issue": {"type": ["integer", "null"], "minimum": 1},
         "status": {"type": ["string", "null"]},
         "priority": {"type": ["string", "null"]},
         "task_pr": {"type": ["integer", "string", "null"]}

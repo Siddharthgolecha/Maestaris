@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Zerion Agent",
   "type": "object",
-  "required": ["schema", "agent", "project", "role", "dispatcher_pool", "status", "mailbox"],
+  "required": ["schema", "agent", "project", "role", "dispatcher_pool", "status"],
   "properties": {
     "schema": {"const": 1},
     "agent": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
@@ -10,7 +10,13 @@
     "role": {"type": "string"},
     "dispatcher_pool": {"type": "string"},
     "status": {"enum": ["active", "assigned", "blocked", "waiting", "dormant", "completed"]},
-    "mailbox": {"type": "object"},
+    "control_plane": {
+      "type": "object",
+      "properties": {
+        "transport": {"enum": ["github_issue", "legacy_pull_request_mailbox"]}
+      }
+    },
+    "mailbox": {"type": "object", "description": "Deprecated legacy PR-mailbox configuration."},
     "project_paths": {"type": "array", "items": {"type": "string"}},
     "current_task": {"type": ["string", "null"]},
     "current_objective": {"type": ["string", "null"]}

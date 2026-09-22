@@ -1,68 +1,60 @@
 # Zerion CLI
 
-The CLI turns the protocol templates into a repeatable onboarding workflow.
+The CLI is optional setup and maintenance tooling. AI agents can operate Zerion directly through a connected GitHub interface.
 
-## Install for development
+## Install
 
-    python -m pip install -e .
+Normal editable install:
 
-This installs the zerion command.
+```bash
+python -m pip install -e .
+```
 
-## Initialize a project
+In a network-restricted environment where build dependencies are already installed, avoid pip build isolation:
 
-    zerion init quantum-compression \
-      --workers theory implementation validation audit \
-      --repository owner/repository
+```bash
+python -m pip install --no-build-isolation -e .
+```
 
-Workers are namespaced automatically as project-role, for example:
+This distinction matters for agent sandboxes: a connected GitHub interface may work even when the shell cannot reach package indexes or github.com.
 
-    quantum-compression-theory
-    quantum-compression-implementation
-    quantum-compression-validation
-    quantum-compression-audit
+The core AI protocol does not require CLI installation.
 
-The command creates the project registry, agent registry entries, one current-state index per worker, registers the project in `coordination/zerion.yaml`, and creates a root `AGENTS.md` only when one does not already exist. Existing `AGENTS.md` instructions are never overwritten.
+## Initialize
 
-## One-command GitHub bootstrap
+```bash
+zerion init quantum-compression \
+  --workers theory implementation audit \
+  --repository owner/repository
+```
 
-When GitHub CLI is installed and authenticated:
+This creates an Issue-native project, namespaced agent entries, worker state indexes, global registration, and root `AGENTS.md` only when absent.
 
-    zerion init quantum-compression \
-      --workers theory implementation audit \
-      --repository owner/repository \
-      --mailboxes \
-      --commit
-
-This additionally:
-
-1. creates one long-lived mailbox branch per active worker;
-2. writes a mailbox marker only on that branch;
-3. opens a draft mailbox PR;
-4. records each PR number in project and agent YAML;
-5. commits the coordination registry changes and pushes them.
-
-The GitHub operation uses your existing gh authentication. Zerion never asks you to place a token in repository configuration.
-
-## Create missing mailboxes later
-
-    zerion mailboxes create quantum-compression
-
-Add --commit to commit and push the updated PR numbers.
+The default path does **not** require `gh`.
 
 ## Status
 
-    zerion status
-
-Machine-readable form:
-
-    zerion status --json
+```bash
+zerion status
+zerion status --json
+```
 
 ## Validate
 
-    zerion validate
+```bash
+zerion validate
+```
 
-Validation checks registry structure, allowed states, project/agent references, and mailbox ownership.
+## Legacy mailbox compatibility
 
-## Safety
+```bash
+zerion init old-project --workers theory audit --mailboxes
+```
 
-zerion mailboxes create requires the GitHub CLI and only creates draft coordination PRs. It does not merge them. Mailbox PRs are intended to remain open.
+or:
+
+```bash
+zerion mailboxes create old-project
+```
+
+These commands require authenticated GitHub CLI and are deprecated. They exist only for older PR-mailbox deployments.

@@ -1,10 +1,8 @@
 # Protocol
 
-## Bootstrap
+## 1. Task Issue
 
-Every AI agent starts with root `AGENTS.md`, then reads the global registry, relevant project/agent/state files, mailbox PR, and task evidence.
-
-## Assignment
+Create an Issue with title prefix `[Zerion task]` and a body beginning with:
 
 ```text
 [ORCHESTRATOR:v1]
@@ -12,20 +10,14 @@ task_id: example-theory-0001
 project: example-project
 worker: theory-worker
 status: ASSIGNED
-base: main
 priority: P1
-objective: ...
-constraints:
-  - ...
-completion:
-  - ...
 ```
 
-The orchestrator also updates the worker's state index to `assigned`.
+Record the Issue number in the worker state index.
 
-## ACK
+## 2. ACK
 
-Before substantive work, the dispatcher checks the mailbox for idempotency/conflicting claims, then claims the task.
+Before substantive work, the worker posts:
 
 ```text
 [WORKER:theory-worker:v1]
@@ -36,56 +28,42 @@ claimed_at: 2026-01-01T00:00:00Z
 lease_hours: 3
 ```
 
-The worker state index moves to `claimed`.
+Then state moves to `claimed`.
 
-## Terminal worker report
+## 3. Work PR
+
+For repository changes, use a branch such as:
 
 ```text
-[WORKER:theory-worker:v1]
-task_id: example-theory-0001
-status: DONE
-commit: <sha>
-pr: <number-or-url>
-summary: ...
-claim_changes: none
-next_blocker: none
+zerion/task/123-short-slug
 ```
 
-Allowed terminal states are `DONE`, `BLOCKED`, and `NEEDS_REVIEW`.
+Open a draft PR early and link it to the task Issue. A closing keyword such as `Resolves #123` is preferred when merge should finish the task.
 
-The state index mirrors the latest terminal state and references the task evidence.
+## 4. Terminal worker result
 
-## Orchestrator review
+Post DONE, BLOCKED, or NEEDS_REVIEW on the Issue with exact evidence.
+
+## 5. Orchestrator review
+
+Inspect actual evidence. Native PR reviews may mirror the decision, but always record:
 
 ```text
 [ORCHESTRATOR-REVIEW:v1]
 task_id: example-theory-0001
 status: ACCEPTED
-summary: ...
-next_task: example-theory-0002
 ```
 
-Review states are `ACCEPTED`, `REVISE`, and `REJECTED`.
+Then synchronize state.
 
-A review is valid only after inspecting durable evidence, not merely the worker's summary.
-
-## State index
-
-The current-state file is optimized for discovery, not historical audit. It records:
-
-- worker and project identity;
-- lifecycle;
-- mailbox PR;
-- current task;
-- ACK claim;
-- latest result;
-- latest orchestrator review;
-- update timestamp.
-
-The mailbox PR remains the chronological control-plane history.
+- ACCEPTED: finalize/integrate work and close Issue as completed.
+- REVISE: leave Issue open.
+- REJECTED: close Issue as not planned.
 
 ## Idempotency
 
-A worker skips an assignment when a terminal result already exists or another valid ACK lease owns it. An orchestrator skips a terminal result when a later review for the same task already exists.
+Stable task IDs plus ACK leases prevent repeated polling from duplicating work. The Issue comment history is checked before any claim or terminal action.
 
-If the state index disagrees with newer mailbox/task evidence, repair the index and continue from the newer evidence.
+## State index
+
+The YAML state file is optimized for discovery and recovery. It must never override newer GitHub Issue/PR evidence.

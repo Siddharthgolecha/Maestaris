@@ -1,69 +1,54 @@
 # Architecture
 
-Zerion is an agent-native, repository-first orchestration protocol.
-
-## Entry path
-
-A fresh AI session enters through `AGENTS.md`:
+Zerion is a repository-first protocol with GitHub-native control and work planes.
 
 ```text
-User / scheduler / runtime
-          |
-          v
-      AGENTS.md
-          |
-          v
-coordination/zerion.yaml
-          |
-   +------+------+ 
-   |      |      |
-project  agent  state
-   |      |      |
-   +------+------+ 
-          |
-          v
-      mailbox PR
-          |
-          v
- task PR / durable evidence
+User / scheduler / AI runtime
+            |
+            v
+        AGENTS.md
+            |
+            v
+ coordination/zerion.yaml
+            |
+    +-------+-------+
+    |       |       |
+ project  agent   state index
+            |
+            v
+      GitHub task Issue
+            |
+     control-plane events
+            |
+            v
+       linked draft PR
+            |
+            v
+     checks / artifacts
 ```
-
-The CLI is optional setup/maintenance tooling, not the primary worker runtime.
 
 ## Durable layers
 
-### Global registry
+### Configuration
 
-`coordination/zerion.yaml` identifies protocol version, canonical branch, orchestrator, worker pools, defaults, and projects.
-
-### Project and agent registries
-
-Project files define membership and canonical paths. Agent files define specialist identity and dispatcher-pool ownership.
+The global registry plus project and agent files define identity, pools, policy, and canonical paths.
 
 ### Current-state index
 
-`coordination/state/<worker>.yaml` is a small machine-readable snapshot that lets a fresh agent cheaply discover the latest known task, claim, result, review, and mailbox.
+`coordination/state/<worker>.yaml` points to the latest known task Issue and task PR. It exists for efficient agent startup.
 
-It is deliberately treated as an index rather than final evidence.
+### Control-plane history
 
-### Control-plane event log
+The task Issue body/comments hold assignment, claim, terminal worker result, and orchestrator review.
 
-Long-lived mailbox PRs record assignments, ACKs, worker terminal reports, and orchestrator reviews.
+### Work plane
 
-### Work-plane evidence
+Task branches and PRs contain substantive changes. Draft PRs make in-progress work visible.
 
-Task PRs contain actual code, research, data, proofs, experiments, or writing. CI and artifacts verify or preserve results.
+### Evidence
 
-## Precedence
+Commits, Actions/checks, proof output, experimental artifacts, and other durable outputs establish what happened.
 
-When data disagrees, use the newest relevant durable GitHub evidence. A stale state index should be repaired; it must not override a newer mailbox event or task PR.
+## Legacy transport
 
-Chat memory never outranks durable repository/GitHub state.
-
-## Reconstruction property
-
-A healthy Zerion project can be reconstructed without the original conversations. Current topology, task ownership, decisions, blockers, and evidence all have durable representations.
-
-## Runtime adapters
-
-ChatGPT conversations, scheduled tasks, API agents, coding agents, CI jobs, or other runtimes may act as dispatchers or workers as long as they follow `AGENTS.md` and the same task/ACK/result/review semantics.
+Older Zerion repositories may use long-lived draft PR mailboxes. v0.4 validates them as a compatibility transport but does not recommend them for new projects.

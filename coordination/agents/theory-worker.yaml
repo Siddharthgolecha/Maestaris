@@ -5,9 +5,8 @@ role: research-and-theory
 dispatcher_pool: A
 status: active
 
-mailbox:
-  transport: pull_request
-  pr: null
+control_plane:
+  transport: github_issue
 
 project_paths:
   - examples/research-demo

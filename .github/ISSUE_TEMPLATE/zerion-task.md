@@ -1,8 +1,9 @@
-# Suggested Issue title
-
-`[Zerion task] <short bounded objective>`
-
-# Issue body
+---
+name: Zerion task
+about: Create a structured Zerion control-plane task Issue
+title: "[Zerion task] "
+assignees: ""
+---
 
 [ORCHESTRATOR:v1]
 task_id: project-worker-0001
@@ -23,3 +24,7 @@ completion:
   - Produce durable evidence.
   - Link any task PR to this Issue.
   - Report exact verification performed.
+
+## Notes
+
+Optional context. The structured block above is the authoritative assignment.

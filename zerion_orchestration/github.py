@@ -34,8 +34,9 @@ def _run(args: list[str], cwd: Path) -> str:
 def require_gh(root: Path) -> None:
     if shutil.which("gh") is None:
         raise GitHubCLIError(
-            "GitHub CLI (gh) is required for mailbox creation. "
-            "Install it and run 'gh auth login'."
+            "GitHub CLI (gh) is required for this optional shell integration. "
+            "AI agents using a connected GitHub interface do not need gh. "
+            "For shell use, install gh and run 'gh auth login'."
         )
     _run(["gh", "auth", "status"], root)
 
@@ -98,6 +99,8 @@ def _record_mailbox(root: Path, worker: str, number: int) -> None:
     agent_path = root / "coordination" / "agents" / f"{worker}.yaml"
     if agent_path.exists():
         agent = load_yaml(agent_path)
+        agent["control_plane"] = {"transport": "legacy_pull_request_mailbox"}
+        agent.setdefault("mailbox", {})["transport"] = "pull_request"
         agent.setdefault("mailbox", {})["pr"] = number
         dump_yaml(agent_path, agent)
 
@@ -121,6 +124,15 @@ def create_mailboxes(
         raise GitHubCLIError(f"project not found: {project_path}")
 
     project = load_yaml(project_path)
+    transport = ((project.get("control_plane") or {}).get("transport"))
+    if transport != "legacy_pull_request_mailbox" and "mailboxes" not in project:
+        raise GitHubCLIError(
+            f"project {project_name!r} uses GitHub Issue control plane; "
+            "PR-backed mailboxes are deprecated. Re-run init with --mailboxes "
+            "only when legacy transport is explicitly required."
+        )
+
+    project["control_plane"] = {"transport": "legacy_pull_request_mailbox"}
     repo = repository or project.get("repository")
     if not repo or repo == "owner/repository":
         repo = infer_repository(root)

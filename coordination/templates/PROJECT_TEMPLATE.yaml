@@ -11,14 +11,12 @@ canonical_paths:
 orchestrator: orchestrator
 auditor: audit-worker
 
+control_plane:
+  transport: github_issue
+
 active_workers:
   - theory-worker
   - implementation-worker
   - audit-worker
 
 dormant_workers: []
-
-mailboxes:
-  theory-worker: null
-  implementation-worker: null
-  audit-worker: null

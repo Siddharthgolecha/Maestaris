@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.4.0
+
+- Make GitHub Issues the preferred Zerion task/control-plane primitive.
+- Use Issue comments for ACK, terminal worker reports, and orchestrator review events.
+- Encourage linked draft task PRs for visible work in progress.
+- Map accepted/rejected terminal tasks to GitHub completed/not-planned close reasons.
+- Add optional native PR review mapping for ACCEPTED and REVISE decisions.
+- Add structured Zerion task Issue template.
+- Add GitHub Actions validation for Zerion task Issues and protocol comments.
+- Add `task.issue` to worker state and remove permanent mailbox requirements from new projects.
+- Keep PR-backed mailboxes as deprecated `legacy_pull_request_mailbox` compatibility transport.
+- Make default initialization independent of shell-level `gh`.
+- Add validation warnings for legacy transport.
+- Add GitHub-native integration, migration, scaling, and recovery documentation.
+- Dogfood finding: connected GitHub access can work even when shell `git clone`/GitHub CLI networking is unavailable.
+
+# Changelog
+
 ## 0.3.0
 
 - Make root `AGENTS.md` the normative Zerion entry point for AI agents.

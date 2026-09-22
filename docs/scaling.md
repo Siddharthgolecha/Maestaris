@@ -1,18 +1,37 @@
 # Scaling
 
-Prefer a small number of generic worker pools over one scheduler per specialist.
+Zerion scales by keeping task identity native to GitHub.
 
-Workers are registered in GitHub and mapped to pools. Pools discover eligible workers, claim tasks, and execute under specialist identities.
+## Worker pools
 
-Useful scheduling fields include:
+Use a small number of generic dispatcher pools. Pools inspect state indexes and open task Issues for eligible workers.
 
-```yaml
-priority: P0
-depends_on:
-  - earlier-task
-blocked_by: null
+Respect `max_tasks_per_run` and ACK leases.
+
+## Issue discovery
+
+At larger scale, use GitHub search, optional labels, milestones, or Projects views to narrow open Zerion tasks.
+
+Suggested optional labels:
+
+```text
+zerion
+zerion:task
+zerion:blocked
+priority:P0
+priority:P1
 ```
 
-Larger installations may set a safe per-run cap such as `max_tasks_per_run: 2`, executing only independent tasks.
+Labels are discoverability aids, not protocol state.
 
-The objective is not maximum activity. It is maximum useful critical-path progress.
+## Dependencies
+
+Keep explicit `depends_on` task IDs in assignments. GitHub Projects or issue relationships may visualize dependencies when available, but durable protocol fields remain portable across runtimes.
+
+## Milestones and Projects
+
+Milestones are useful for releases or research phases. GitHub Projects can provide a board/dashboard. Neither is required because connected AI runtimes may not expose every native surface.
+
+## Parallelism
+
+Parallelize independent Issues, not duplicate workers on the same task. The objective is critical-path progress, not maximum agent activity.

@@ -2,163 +2,116 @@
 
 **Agents reason. GitHub remembers.**
 
-Zerion is a GitHub-backed orchestration protocol for coordinating persistent specialist AI workers across long-running research, engineering, analysis, and writing projects.
+Zerion is an agent-native orchestration protocol for coordinating persistent AI workers through ordinary GitHub primitives.
 
-The primary interface is **agent-native**: a fresh AI session starts from the repository's `AGENTS.md`, reconstructs current operating state from GitHub, and continues without depending on prior chat history.
+A fresh AI session starts at `AGENTS.md`, reconstructs its role and current work from GitHub, and continues without depending on prior chat history.
+
+## GitHub-native model
+
+```text
+AGENTS.md
+    |
+    v
+coordination/zerion.yaml
+    |
+    +--> project / agent / state indexes
+    |
+    v
+GitHub task Issue
+    |
+    +--> ACK / worker result / orchestrator review comments
+    |
+    v
+linked draft task PR
+    |
+    v
+commits + Actions/checks + artifacts
+```
+
+The preferred mapping is:
+
+| Zerion | GitHub |
+| --- | --- |
+| bounded task | Issue |
+| control-plane history | Issue comments |
+| work in progress | draft PR |
+| substantive result | PR / commit |
+| verification | Actions / checks / artifacts |
+| review UX | native PR review |
+| accepted task | Issue closed as completed |
+| rejected task | Issue closed as not planned |
+
+The current-state YAML is only a fast index. The Issue/PR/check history is the durable evidence.
 
 ## Core invariant
 
-> If every worker vanished, the project should still be reconstructible from the repository.
-
-Chat memory is useful context, not canonical project state.
-
-## Agent-native architecture
-
-```text
-                         AGENTS.md
-                             |
-                             v
-                 coordination/zerion.yaml
-                             |
-              +--------------+--------------+
-              |              |              |
-              v              v              v
-         projects/        agents/         state/
-              |              |              |
-              +--------------+--------------+
-                             |
-                             v
-                        mailbox PR
-                    control-plane log
-                             |
-                             v
-                     task PR / commits
-                     CI / proofs / data
-                     substantive evidence
-```
-
-Zerion separates two planes:
-
-```text
-Mailbox PR = control plane
-Task PR    = work plane
-```
-
-The worker state file is a fast machine-readable index. The mailbox is the chronological control-plane history. Task PRs and artifacts are the substantive evidence.
-
-## Why Zerion
-
-Zerion is designed for workflows where one AI conversation is not enough: parallel research branches, formal proofs, experiments, software implementation, audits, publication work, migrations, benchmarking, or any project that benefits from specialist workers with durable hand-offs.
-
-It does **not** require a particular AI runtime. Ordinary ChatGPT conversations, scheduled tasks, API agents, coding agents, CI-driven workers, or other runtimes can follow the same repository protocol.
+> If every worker disappeared, the project should still be reconstructible from GitHub.
 
 ## For AI agents
 
 Read `AGENTS.md` first.
 
-It defines a deterministic bootstrap:
+The default lifecycle is:
 
-1. read the global Zerion registry;
-2. resolve the project and role;
-3. read project, agent, and current-state files;
-4. inspect the mailbox PR;
-5. check task idempotency and ACK ownership;
-6. read canonical project state;
-7. inspect actual task evidence;
-8. only then act.
+1. discover or create a structured `[Zerion task]` Issue;
+2. ACK in an Issue comment;
+3. open a linked draft PR early for repository work;
+4. execute and verify the bounded objective;
+5. report DONE / BLOCKED / NEEDS_REVIEW in the Issue;
+6. inspect durable evidence;
+7. record the Zerion review event;
+8. close the Issue with GitHub's appropriate close reason when terminal.
 
-This is the primary Zerion interface.
+No CLI is required for agent operation.
 
 ## Optional CLI
 
-The CLI exists for human setup, validation, and maintenance; it is not required for an AI worker to operate Zerion.
-
-Install locally:
+The CLI is for setup, local validation, and maintenance:
 
 ```bash
 python -m pip install -e .
-```
 
-Initialize a project:
+# If build isolation cannot reach package indexes:
+# python -m pip install --no-build-isolation -e .
 
-```bash
 zerion init demo-project \
   --workers theory implementation audit \
   --repository owner/repository
-```
 
-This automatically creates:
-
-- a project registry entry;
-- namespaced agent entries;
-- one machine-readable state file per worker;
-- registration in `coordination/zerion.yaml`.
-
-With authenticated GitHub CLI, Zerion can also create long-lived draft mailbox PRs and record their PR numbers:
-
-```bash
-zerion init demo-project \
-  --workers theory implementation audit \
-  --repository owner/repository \
-  --mailboxes \
-  --commit
-```
-
-Inspect or validate:
-
-```bash
-zerion status
 zerion validate
+zerion status
 ```
 
-## Message lifecycle
+New projects use GitHub Issues by default. `--mailboxes` remains only for deprecated PR-mailbox compatibility and requires shell-level GitHub CLI access.
 
-```text
-ORCHESTRATOR ASSIGNED
-        |
-        v
-WORKER ACK
-        |
-        v
-worker executes bounded task
-        |
-        v
-DONE / BLOCKED / NEEDS_REVIEW
-        |
-        v
-ORCHESTRATOR REVIEW
-        |
-        +--> ACCEPTED
-        +--> REVISE
-        +--> REJECTED
-```
+## GitHub-native extras
 
-The mailbox records this history; `coordination/state/<worker>.yaml` summarizes the latest known state for efficient agent startup.
+Labels, milestones, assignees, GitHub Projects, reactions, and branch rules can improve navigation and governance, but Zerion does not require them for correctness. This keeps the protocol usable from connected AI runtimes even when some GitHub surfaces are unavailable.
+
+See [GitHub-native integration](docs/github-native.md).
 
 ## Design principles
 
-- **AGENTS.md is the bootstrap.** A fresh AI session should know how to enter the system.
-- **GitHub wins.** Durable repository and GitHub evidence outrank remembered chat summaries.
-- **State is indexed, evidence is inspected.** Fast state files never replace mailbox/task verification.
-- **Bounded work.** Workers execute assigned objectives; the orchestrator chooses the next objective.
-- **Durable evidence.** Results point to commits, PRs, CI, tests, proofs, artifacts, or explicit blockers.
-- **Idempotency.** Repeated polling or invocation must be safe.
-- **Dormancy is healthy.** Finished or blocked workers should not consume runtime merely to appear active.
-- **Negative results stay negative.** Reviews may contextualize evidence but must not silently rewrite failures into successes.
-- **Runtime constraints are adapters, not protocol rules.**
+- **AGENTS.md is the bootstrap.**
+- **GitHub is durable state.**
+- **Issues are task/control-plane objects.**
+- **Draft PRs expose work in progress.**
+- **Checks and artifacts are evidence.**
+- **State YAML is an index, not truth by itself.**
+- **Retries must be idempotent.**
+- **Negative and inconclusive results remain preserved.**
+- **Dormancy is healthy.**
+- **Runtime-specific limits stay outside the core protocol.**
 
 ## Documentation
 
 - [Architecture](docs/architecture.md)
 - [Protocol](docs/protocol.md)
+- [GitHub-native integration](docs/github-native.md)
 - [Quick start](docs/quickstart.md)
 - [CLI](docs/cli.md)
 - [Failure recovery](docs/failure-recovery.md)
 - [Scaling](docs/scaling.md)
-
-## Status
-
-Zerion is an early reference implementation of a repository-first, agent-native orchestration pattern.
 
 ## License
 

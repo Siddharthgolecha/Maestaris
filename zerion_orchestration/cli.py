@@ -36,6 +36,26 @@ def _maybe_repo(root: Path, requested: str | None) -> str:
         return "owner/repository"
 
 
+def _enable_legacy_mailboxes(root: Path, project_name: str, workers: list[str]) -> None:
+    project_path = root / "coordination" / "projects" / f"{project_name}.yaml"
+    project = load_yaml(project_path)
+    project["control_plane"] = {"transport": "legacy_pull_request_mailbox"}
+    project["mailboxes"] = {worker: None for worker in workers}
+    dump_yaml(project_path, project)
+
+    for worker in workers:
+        agent_path = root / "coordination" / "agents" / f"{worker}.yaml"
+        agent = load_yaml(agent_path)
+        agent["control_plane"] = {"transport": "legacy_pull_request_mailbox"}
+        agent["mailbox"] = {"transport": "pull_request", "pr": None}
+        dump_yaml(agent_path, agent)
+
+        state_path = root / "coordination" / "state" / f"{worker}.yaml"
+        state = load_yaml(state_path)
+        state["mailbox"] = {"pr": None}
+        dump_yaml(state_path, state)
+
+
 def command_init(args: argparse.Namespace) -> int:
     root = _root(args.root)
     ensure_layout(root)
@@ -60,6 +80,7 @@ def command_init(args: argparse.Namespace) -> int:
             occupied = agent_path if agent_path.exists() else state_path
             print(f"worker already exists: {occupied}", file=sys.stderr)
             return 2
+
     repository = _maybe_repo(root, args.repository)
     title = args.title or args.project.replace("-", " ").title()
 
@@ -90,15 +111,21 @@ def command_init(args: argparse.Namespace) -> int:
     if created_agents_md:
         print("Created root AGENTS.md entry point.")
     print(f"Project registry: {project_path.relative_to(root)}")
+    print("Control plane: GitHub Issues (preferred native transport).")
 
     if args.mailboxes:
+        print(
+            "warning: --mailboxes enables deprecated PR-backed mailbox transport",
+            file=sys.stderr,
+        )
+        _enable_legacy_mailboxes(root, args.project, workers)
         try:
             created = create_mailboxes(root, args.project, repository=repository)
         except GitHubCLIError as exc:
-            print(f"mailbox bootstrap failed: {exc}", file=sys.stderr)
+            print(f"legacy mailbox bootstrap failed: {exc}", file=sys.stderr)
             return 1
         for worker, number in created.items():
-            print(f"Mailbox #{number}: {worker}")
+            print(f"Legacy mailbox PR #{number}: {worker}")
         if args.commit:
             try:
                 commit_setup(root, f"Register Zerion project {args.project}")
@@ -122,16 +149,16 @@ def command_mailboxes_create(args: argparse.Namespace) -> int:
             base=args.base,
         )
         if args.commit:
-            commit_setup(root, f"Register Zerion mailboxes for {args.project}")
+            commit_setup(root, f"Register legacy Zerion mailboxes for {args.project}")
     except GitHubCLIError as exc:
         print(str(exc), file=sys.stderr)
         return 1
 
     if not created:
-        print("No mailboxes created; all active workers already have mailbox PRs.")
+        print("No legacy mailboxes created; all workers already have mailbox PRs.")
     else:
         for worker, number in created.items():
-            print(f"Created mailbox #{number}: {worker}")
+            print(f"Created legacy mailbox PR #{number}: {worker}")
     return 0
 
 
@@ -143,6 +170,12 @@ def command_validate(args: argparse.Namespace) -> int:
         for error in result.errors:
             print(f"- {error}", file=sys.stderr)
         return 1
+
+    if result.warnings and not getattr(args, "quiet", False):
+        print("Zerion configuration warnings:", file=sys.stderr)
+        for warning in result.warnings:
+            print(f"- {warning}", file=sys.stderr)
+
     if not getattr(args, "quiet", False):
         print(
             f"Zerion configuration validation OK: "
@@ -152,11 +185,21 @@ def command_validate(args: argparse.Namespace) -> int:
     return 0
 
 
-def _mailbox_count(project: dict) -> tuple[int, int]:
+def _project_control_stats(project_name: str, project: dict, states: dict) -> tuple[str, int, int]:
     workers = project.get("active_workers") or []
+    control = project.get("control_plane") or {}
+    transport = control.get("transport")
+    if transport == "github_issue":
+        configured = sum(
+            1
+            for worker in workers
+            if ((states.get(worker) or {}).get("task") or {}).get("issue")
+        )
+        return "issues", configured, len(workers)
+
     mailboxes = project.get("mailboxes") or {}
     configured = sum(1 for worker in workers if mailboxes.get(worker))
-    return configured, len(workers)
+    return "legacy-pr", configured, len(workers)
 
 
 def command_status(args: argparse.Namespace) -> int:
@@ -166,6 +209,7 @@ def command_status(args: argparse.Namespace) -> int:
         payload = {
             "ok": result.ok,
             "errors": result.errors,
+            "warnings": result.warnings,
             "registry": result.registry,
             "projects": result.projects,
             "agents": result.agents,
@@ -178,15 +222,20 @@ def command_status(args: argparse.Namespace) -> int:
         print("No Zerion projects registered.")
         return 1 if result.errors else 0
 
-    print("PROJECT                  STATUS      MAILBOXES  WORKERS")
-    print("-----------------------  ----------  ---------  ------------------------------")
+    print("PROJECT                  STATUS      CONTROL    ACTIVE  WORKERS")
+    print("-----------------------  ----------  ---------  ------  ------------------------------")
     for name, project in sorted(result.projects.items()):
-        configured, total = _mailbox_count(project)
+        control, configured, total = _project_control_stats(name, project, result.states)
         workers = ", ".join(project.get("active_workers") or []) or "-"
         print(
             f"{name[:23]:23}  {str(project.get('status'))[:10]:10}  "
-            f"{configured:>2}/{total:<6}  {workers}"
+            f"{control[:9]:9}  {configured:>2}/{total:<3}  {workers}"
         )
+
+    if result.warnings:
+        print("\nWarnings:")
+        for warning in result.warnings:
+            print(f"- {warning}")
 
     if result.errors:
         print("\nValidation issues:")
@@ -216,11 +265,15 @@ def build_parser() -> argparse.ArgumentParser:
     )
     init.add_argument("--repository", help="GitHub owner/repository; inferred with gh when possible")
     init.add_argument("--runtime", default="runtime-defined")
-    init.add_argument("--mailboxes", action="store_true", help="create draft mailbox PRs with gh")
+    init.add_argument(
+        "--mailboxes",
+        action="store_true",
+        help="DEPRECATED: use legacy draft-PR mailboxes instead of GitHub task Issues",
+    )
     init.add_argument(
         "--commit",
         action="store_true",
-        help="with --mailboxes, commit coordination changes and push",
+        help="with --mailboxes, commit legacy coordination changes and push",
     )
     init.add_argument("--force", action="store_true")
     init.set_defaults(func=command_init)
@@ -228,13 +281,13 @@ def build_parser() -> argparse.ArgumentParser:
     validate = sub.add_parser("validate", help="validate Zerion configuration")
     validate.set_defaults(func=command_validate)
 
-    status = sub.add_parser("status", help="show projects, workers, and mailbox coverage")
+    status = sub.add_parser("status", help="show projects, workers, and control-plane refs")
     status.add_argument("--json", action="store_true")
     status.set_defaults(func=command_status)
 
-    mailboxes = sub.add_parser("mailboxes", help="manage control-plane mailbox PRs")
+    mailboxes = sub.add_parser("mailboxes", help="manage deprecated PR-backed mailboxes")
     mailbox_sub = mailboxes.add_subparsers(dest="mailbox_command", required=True)
-    create = mailbox_sub.add_parser("create", help="create missing draft mailbox PRs")
+    create = mailbox_sub.add_parser("create", help="create missing legacy draft mailbox PRs")
     create.add_argument("project")
     create.add_argument("--repository")
     create.add_argument("--base")
