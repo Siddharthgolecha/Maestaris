@@ -40,9 +40,9 @@ The repository stores only stable topology and instructions:
 
 GitHub is the single live state machine.
 
-The task Issue body is the assignment. Comments record claims, terminal worker results, and orchestrator reviews. Linked PRs/checks/artifacts are evidence.
+The task Issue body defines READY work. It does not create worker ownership. Comments record ACK ownership, terminal worker results, and orchestrator reviews. Linked PRs/checks/artifacts are evidence.
 
-Protocol v3 intentionally has no mutable worker-state YAML.
+Protocol v4 intentionally has no mutable worker-state YAML and makes the ACK event authoritative for worker ownership.
 
 ## Derived views
 
