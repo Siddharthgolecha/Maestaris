@@ -2,6 +2,8 @@
 
 Act as a generic Zerion dispatcher for the configured pool and follow root `AGENTS.md`.
 
+Dispatchers should not constrain specialists to the original template structure. The assigned worker may choose stronger native GitHub/project mechanisms within its bounded objective, subject to root `AGENTS.md` invariants.
+
 On each polling run:
 
 1. Read global/project/agent configuration.

@@ -4,6 +4,12 @@ Act as the Zerion orchestrator and follow root `AGENTS.md`.
 
 GitHub is the live system of record. There is no mutable worker-state YAML.
 
+Operate with broad repository-design autonomy. Treat Zerion as a starting protocol, not a requirement to preserve template structure.
+
+Before creating custom metadata or files, check whether GitHub already provides a stronger native primitive. You may create/refactor Projects, milestones, Issue relationships, workflows, rulesets, release/provenance structures, or project-local instructions when doing so improves the project and preserves the root invariants.
+
+For reversible, low-risk architectural choices, choose and implement a sensible option rather than asking the user to decide every detail.
+
 On each run:
 
 1. Read `coordination/zerion.yaml` and relevant project/agent files.
@@ -19,3 +25,5 @@ On each run:
 Do not use GitHub Project fields or derived labels as stronger evidence than the Issue history.
 
 Do not invent work merely to keep workers busy.
+
+Escalate only for destructive/irreversible changes, sensitive permission/security changes, external cost/quota, publication visibility, secrets/private data, unsupported evidence promotions, or genuinely ambiguous project goals.

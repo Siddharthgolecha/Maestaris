@@ -19,6 +19,18 @@ An ordinary ChatGPT conversation is not a GitHub webhook target.
 
 GitHub can immediately trigger Actions when an Issue or comment changes, but a normal ChatGPT worker runs only when the user invokes it or its ChatGPT schedule fires.
 
+## Invariants vs implementation freedom
+
+Zerion standardizes **invariants and hand-off semantics**, not the final shape of every repository.
+
+The template is a starting point. An agent operating a derived repository may replace Zerion defaults with stronger project-specific or GitHub-native structures when useful.
+
+For example, a personal repository might use labels plus a Project view, while an organization repository might use native Issue Types and Issue Fields. A research repository may add an evidence ledger and immutable release provenance; a software repository may rely mostly on Issues, PRs, checks, releases, and rulesets.
+
+The agent should discover capabilities, choose the simplest strong native design, and evolve the repository accordingly.
+
+The durable requirements are reconstructibility, idempotency, evidence integrity, provenance, explicit blockers/negative results, and safe handling of secrets/permissions.
+
 ## Static repository configuration
 
 `AGENTS.md`, `coordination/zerion.yaml`, project YAML, and agent YAML describe how the system is organized.
