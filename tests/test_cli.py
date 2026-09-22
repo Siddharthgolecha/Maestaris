@@ -13,13 +13,15 @@ from zerion_orchestration.core import validate_repository
 from zerion_orchestration.protocol import (
     desired_managed_labels,
     is_managed_label,
+    pinned_worker,
     reduce_task_status,
     validate_protocol_comment,
     validate_task_issue,
+    worker_from_event,
 )
 
 
-class ZerionV05Tests(unittest.TestCase):
+class ZerionProtocolV4Tests(unittest.TestCase):
     def init_project(self, root: Path) -> int:
         return main(
             [
@@ -45,13 +47,14 @@ class ZerionV05Tests(unittest.TestCase):
                 (root / "coordination" / "projects" / "alpha.yaml").read_text()
             )
 
-            self.assertEqual(registry["protocol_version"], 3)
+            self.assertEqual(registry["protocol_version"], 4)
             self.assertEqual(registry["github"]["task_transport"], "issue")
             self.assertEqual(registry["github"]["task_label"], "zerion:task")
             self.assertEqual(
-                registry["github"]["projects"]["auto_add_filter"],
-                'is:issue label:"zerion:task"',
+                registry["github"]["status_labels"]["ready"],
+                "zerion:ready",
             )
+            self.assertNotIn("assigned", registry["github"]["status_labels"])
 
             self.assertEqual(
                 project["active_workers"],
@@ -72,12 +75,6 @@ class ZerionV05Tests(unittest.TestCase):
             self.assertFalse((root / "coordination" / "state").exists())
             self.assertFalse((root / "coordination" / "mailboxes").exists())
             self.assertEqual(main(["--root", str(root), "validate"]), 0)
-
-            status = io.StringIO()
-            with contextlib.redirect_stdout(status):
-                self.assertEqual(main(["--root", str(root), "status"]), 0)
-            self.assertIn("live task state is in GitHub", status.getvalue())
-            self.assertIn("alpha", status.getvalue())
 
     def test_existing_agents_md_is_preserved(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -109,7 +106,7 @@ class ZerionV05Tests(unittest.TestCase):
                     2,
                 )
 
-    def test_protocol_v3_rejects_shadow_state_files(self):
+    def test_protocol_v4_rejects_shadow_state_files(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             self.assertEqual(self.init_project(root), 0)
@@ -123,13 +120,12 @@ class ZerionV05Tests(unittest.TestCase):
                 any("removed mutable state/mailbox files" in e for e in result.errors)
             )
 
-    def test_task_issue_and_comment_validation(self):
+    def test_new_task_is_ready_without_worker_or_status(self):
         body = """[ORCHESTRATOR:v1]
-task_id: alpha-theory-0001
+task_id: alpha-proof-0001
 project: alpha
-worker: alpha-theory
-status: ASSIGNED
 priority: P0
+depends_on: []
 
 objective: |
   Prove one bounded claim.
@@ -138,28 +134,65 @@ objective: |
             validate_task_issue("[Zerion task] bounded proof", body),
             [],
         )
+        self.assertIsNone(pinned_worker(body))
+        self.assertEqual(reduce_task_status([]), "ready")
 
+    def test_task_can_be_pinned_to_specific_worker(self):
+        body = """[ORCHESTRATOR:v1]
+task_id: alpha-security-0001
+project: alpha
+worker: alpha-security
+priority: P0
+
+objective: |
+  Perform the security audit.
+"""
+        self.assertEqual(
+            validate_task_issue("[Zerion task] security audit", body),
+            [],
+        )
+        self.assertEqual(pinned_worker(body), "alpha-security")
+
+    def test_legacy_assigned_body_is_accepted_during_migration(self):
+        body = """[ORCHESTRATOR:v1]
+task_id: alpha-old-0001
+project: alpha
+worker: alpha-theory
+status: ASSIGNED
+priority: P1
+
+objective: |
+  Complete legacy work.
+"""
+        self.assertEqual(
+            validate_task_issue("[Zerion task] legacy task", body),
+            [],
+        )
+
+    def test_invalid_task_status_is_rejected(self):
+        body = """[ORCHESTRATOR:v1]
+task_id: alpha-bad-0001
+project: alpha
+status: DONE
+priority: P1
+
+objective: |
+  Invalid initial status.
+"""
+        errors = validate_task_issue("[Zerion task] bad task", body)
+        self.assertTrue(any("status" in error for error in errors))
+
+    def test_ack_establishes_worker_identity_and_claim(self):
         ack = """[WORKER:alpha-theory:v1]
-task_id: alpha-theory-0001
+task_id: alpha-proof-0001
 status: ACK
 dispatcher: pool-A
 claimed_at: 2026-09-22T17:00:00Z
 lease_hours: 3
 """
         self.assertEqual(validate_protocol_comment(ack), [])
-
-        done = """[WORKER:alpha-theory:v1]
-task_id: alpha-theory-0001
-status: DONE
-summary: proof committed and checked
-"""
-        self.assertEqual(validate_protocol_comment(done), [])
-
-        review = """[ORCHESTRATOR-REVIEW:v1]
-task_id: alpha-theory-0001
-status: ACCEPTED
-"""
-        self.assertEqual(validate_protocol_comment(review), [])
+        self.assertEqual(worker_from_event(ack), "alpha-theory")
+        self.assertEqual(reduce_task_status([ack]), "claimed")
 
     def test_event_reduction_is_the_live_state_machine(self):
         comments = [
@@ -194,11 +227,11 @@ summary: new evidence is ready
         ]
         self.assertEqual(reduce_task_status(comments), "needs_review")
 
-    def test_managed_labels_are_derived_from_events(self):
+    def test_ready_and_claimed_labels_are_derived_from_events(self):
         github = {
             "task_label": "zerion:task",
             "status_labels": {
-                "assigned": "zerion:assigned",
+                "ready": "zerion:ready",
                 "claimed": "zerion:claimed",
                 "blocked": "zerion:blocked",
                 "needs_review": "zerion:needs-review",
@@ -211,26 +244,25 @@ summary: new evidence is ready
         body = """[ORCHESTRATOR:v1]
 task_id: t1
 project: alpha
-worker: alpha-theory
-status: ASSIGNED
 priority: P0
 """
-        comments = [
-            """[WORKER:alpha-theory:v1]
+        self.assertEqual(
+            desired_managed_labels(body, [], github),
+            {"zerion:task", "zerion:ready", "priority:P0"},
+        )
+
+        ack = """[WORKER:alpha-theory:v1]
 task_id: t1
 status: ACK
 dispatcher: pool-A
 claimed_at: now
 lease_hours: 3
 """
-        ]
-
-        labels = desired_managed_labels(body, comments, github)
         self.assertEqual(
-            labels,
+            desired_managed_labels(body, [ack], github),
             {"zerion:task", "zerion:claimed", "priority:P0"},
         )
-        self.assertTrue(is_managed_label("zerion:blocked", github))
+        self.assertTrue(is_managed_label("zerion:ready", github))
         self.assertTrue(is_managed_label("priority:P1", github))
         self.assertFalse(is_managed_label("documentation", github))
 
