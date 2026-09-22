@@ -1,0 +1,16 @@
+schema: 1
+agent: implementation-worker
+project: example-project
+role: implementation-and-testing
+dispatcher_pool: B
+status: active
+
+mailbox:
+  transport: pull_request
+  pr: null
+
+project_paths:
+  - examples/research-demo
+
+current_task: null
+current_objective: null
