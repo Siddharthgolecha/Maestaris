@@ -1,0 +1,17 @@
+schema: 1
+agent: orchestrator
+project: "*"
+role: project-orchestration
+dispatcher_pool: none
+status: active
+
+mailbox:
+  transport: none
+  pr: null
+
+project_paths:
+  - coordination/projects
+  - coordination/agents
+
+current_task: null
+current_objective: null
