@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.6.0
+
+- Introduce Zerion protocol v4 queue semantics.
+- New task Issues are READY and unowned by default.
+- Remove worker/status requirements from new task bodies.
+- Make the first valid ACK the authoritative worker-ownership event.
+- Add optional `worker:` pinning only for tasks that require a specific specialist.
+- Replace `zerion:assigned` with `zerion:ready`.
+- Update worker pools to select eligible READY work before claiming it.
+- Preserve legacy `status: ASSIGNED` parsing during migration.
+- Add protocol-v4 tests and migration guidance.
+
 ## 0.5.0
 
 Breaking protocol release.
