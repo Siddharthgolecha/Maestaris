@@ -4,9 +4,21 @@ The CLI is optional setup and maintenance tooling. AI agents can operate Zerion 
 
 ## Install
 
+Normal editable install:
+
 ```bash
 python -m pip install -e .
 ```
+
+In a network-restricted environment where build dependencies are already installed, avoid pip build isolation:
+
+```bash
+python -m pip install --no-build-isolation -e .
+```
+
+This distinction matters for agent sandboxes: a connected GitHub interface may work even when the shell cannot reach package indexes or github.com.
+
+The core AI protocol does not require CLI installation.
 
 ## Initialize
 
