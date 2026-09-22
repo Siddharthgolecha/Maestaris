@@ -8,8 +8,9 @@ import sys
 
 import yaml
 
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT))
+RUNTIME_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(os.environ.get("ZERION_PROJECT_ROOT", str(RUNTIME_ROOT))).resolve()
+sys.path.insert(0, str(RUNTIME_ROOT))
 
 from zerion_orchestration.protocol import (
     validate_protocol_comment,
@@ -24,7 +25,9 @@ def main() -> int:
         return 0
 
     event = json.loads(Path(event_path).read_text(encoding="utf-8"))
-    registry = yaml.safe_load((ROOT / "coordination" / "zerion.yaml").read_text())
+    registry = yaml.safe_load(
+        (PROJECT_ROOT / "coordination" / "zerion.yaml").read_text()
+    )
     github = registry["github"]
 
     issue = event.get("issue") or {}
