@@ -20,6 +20,7 @@ from .core import (
     validate_name,
     validate_repository,
 )
+from .doctor import capability_report, render_report
 
 
 def _root(value: str) -> Path:
@@ -157,6 +158,12 @@ def command_status(args: argparse.Namespace) -> int:
     return 0
 
 
+def command_doctor(args: argparse.Namespace) -> int:
+    report = capability_report(_root(args.root))
+    print(render_report(report, as_json=args.json))
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="zerion",
@@ -189,6 +196,10 @@ def build_parser() -> argparse.ArgumentParser:
     status = sub.add_parser("status", help="show static project registration")
     status.add_argument("--json", action="store_true")
     status.set_defaults(func=command_status)
+
+    doctor = sub.add_parser("doctor", help="report optional runtime capabilities")
+    doctor.add_argument("--json", action="store_true", help="emit machine-readable JSON")
+    doctor.set_defaults(func=command_doctor)
 
     return parser
 
