@@ -1,7 +1,19 @@
 # Manual chat runtime
 
-Zerion does not require autonomous scheduling.
+Zerion also works without scheduling.
 
-A user can maintain one orchestrator conversation and one or more specialist conversations, using GitHub mailboxes for hand-offs.
+Keep one orchestrator conversation and any number of specialist conversations.
 
-At the start of each turn, the worker reconstructs state from its configuration, mailbox, canonical project files, recent task PRs, and CI rather than relying solely on prior chat context.
+At the start of a turn, tell the chat to use Zerion on the repository and read `AGENTS.md`.
+
+The chat reconstructs current state from GitHub task Issues/comments and linked evidence rather than relying on prior conversation context.
+
+Typical manual flow:
+
+1. orchestrator creates/updates a task Issue;
+2. user opens or returns to the specialist chat;
+3. specialist polls GitHub, ACKs, works, and reports;
+4. user invokes orchestrator;
+5. orchestrator reviews evidence and continues the project.
+
+A fresh specialist conversation can replace an old one as long as GitHub contains the durable state.
