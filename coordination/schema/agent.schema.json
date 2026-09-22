@@ -9,16 +9,15 @@
     "project": {"type": "string"},
     "role": {"type": "string"},
     "dispatcher_pool": {"type": "string"},
-    "status": {"enum": ["active", "assigned", "blocked", "waiting", "dormant", "completed"]},
+    "status": {"enum": ["active", "blocked", "waiting", "dormant", "completed"]},
     "control_plane": {
       "type": "object",
       "properties": {
-        "transport": {"enum": ["github_issue", "legacy_pull_request_mailbox"]}
-      }
+        "transport": {"const": "github_issue"}
+      },
+      "additionalProperties": false
     },
-    "mailbox": {"type": "object", "description": "Deprecated legacy PR-mailbox configuration."},
-    "project_paths": {"type": "array", "items": {"type": "string"}},
-    "current_task": {"type": ["string", "null"]},
-    "current_objective": {"type": ["string", "null"]}
-  }
+    "project_paths": {"type": "array", "items": {"type": "string"}}
+  },
+  "additionalProperties": false
 }
