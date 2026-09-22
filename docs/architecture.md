@@ -1,54 +1,55 @@
 # Architecture
 
-Zerion is a repository-first protocol with GitHub-native control and work planes.
+Zerion connects ephemeral reasoning runtimes to durable GitHub coordination.
 
 ```text
-User / scheduler / AI runtime
-            |
-            v
-        AGENTS.md
-            |
-            v
- coordination/zerion.yaml
-            |
-    +-------+-------+
-    |       |       |
- project  agent   state index
-            |
-            v
-      GitHub task Issue
-            |
-     control-plane events
-            |
-            v
-       linked draft PR
-            |
-            v
-     checks / artifacts
+ChatGPT orchestrator / worker chats
+             |
+             | manual or scheduled polling
+             v
+      GitHub task Issues
+             |
+       protocol comments
+             |
+             v
+        linked task PRs
+             |
+             v
+       checks + artifacts
+
+GitHub events
+     |
+     +--> Actions validate/sync labels/run CI
+     |
+     +--> GitHub Projects dashboard
+     |
+     X--> do not directly wake an ordinary ChatGPT chat
 ```
 
-## Durable layers
+## Static configuration
 
-### Configuration
+The repository stores only stable topology and instructions:
 
-The global registry plus project and agent files define identity, pools, policy, and canonical paths.
+- `AGENTS.md`
+- `coordination/zerion.yaml`
+- project YAML
+- agent YAML
+- prompts and schemas
 
-### Current-state index
+## Live state
 
-`coordination/state/<worker>.yaml` points to the latest known task Issue and task PR. It exists for efficient agent startup.
+GitHub is the single live state machine.
 
-### Control-plane history
+The task Issue body is the assignment. Comments record claims, terminal worker results, and orchestrator reviews. Linked PRs/checks/artifacts are evidence.
 
-The task Issue body/comments hold assignment, claim, terminal worker result, and orchestrator review.
+Protocol v3 intentionally has no mutable worker-state YAML.
 
-### Work plane
+## Derived views
 
-Task branches and PRs contain substantive changes. Draft PRs make in-progress work visible.
+Actions derive status/priority labels from the Issue event log.
 
-### Evidence
+GitHub Projects may auto-add task Issues and expose dashboards. Labels and Project fields are derived and never override Issue history.
 
-Commits, Actions/checks, proof output, experimental artifacts, and other durable outputs establish what happened.
+## Reconstruction property
 
-## Legacy transport
-
-Older Zerion repositories may use long-lived draft PR mailboxes. v0.4 validates them as a compatibility transport but does not recommend them for new projects.
+If every ChatGPT conversation disappeared, a fresh chat should recover from static repo config plus GitHub Issues/PRs/checks.
