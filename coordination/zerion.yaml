@@ -32,7 +32,7 @@ github:
     optional: true
     auto_add_filter: 'is:issue label:"zerion:task"'
     field_sync:
-      enabled: false
+      enabled: true
       project_id_env: ZERION_PROJECT_ID
       token_env: ZERION_PROJECT_TOKEN
       fields:
