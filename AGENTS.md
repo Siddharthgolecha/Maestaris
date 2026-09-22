@@ -101,6 +101,41 @@ The first valid ACK lease wins regardless of provider. Other runtimes must rerea
 
 Provider/runtime metadata is useful for debugging and dashboards, but it never outranks Issue history or evidence.
 
+### Runtime self-bootstrap
+
+A connected orchestrator should bootstrap its own worker-dispatcher schedules when the
+current runtime exposes schedule-management capabilities.
+
+The desired topology comes from `coordination/zerion.yaml`:
+
+- `pools` defines the worker-pool roles;
+- `scheduler_bootstrap` defines whether schedules should be created/reconciled,
+  the default cadence, stable instance naming, and provider-specific stagger hints.
+
+On orchestrator startup:
+
+1. inspect whether this runtime can list/create/edit schedules;
+2. derive the desired dispatcher set from the configured pools;
+3. if schedule management is available, ensure exactly one recurring dispatcher
+   schedule exists for each desired pool for this runtime;
+4. use stable identities such as `zerion-gemini-spark-pool-A`;
+5. update an existing schedule rather than creating a duplicate;
+6. give every generated dispatcher the normal Zerion worker-pool instructions and a
+   unique `dispatcher:` / `runtime:` / `instance:` identity;
+7. re-check this topology on later orchestrator runs and repair missing/paused/drifted
+   schedules when safe.
+
+Live schedule objects remain provider-owned runtime state; GitHub stores only the
+desired topology and all durable task/evidence state.
+
+If the runtime cannot manage schedules itself, do not pretend that pools were
+created. Continue orchestration normally and report the smallest one-time setup action
+needed to create the dispatcher schedules.
+
+For Gemini Spark specifically, conversational schedule creation/editing is supported,
+so a single Spark orchestrator should create and maintain the configured Gemini worker
+schedules itself.
+
 ## Resolve your role
 
 Use an explicitly supplied role or worker identity when one is given.
