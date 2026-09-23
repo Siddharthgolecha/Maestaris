@@ -31,7 +31,12 @@ def audit_task(*, issue_body: str, comments: Iterable[str], labels: Iterable[str
     retry_budget = int(github_config.get("worker_retry_budget", github_config.get("defaults", {}).get("worker_retry_budget", 3)))
     lease_state = recovery_state(comments, retry_budget=retry_budget, now=now)
     if status == "claimed" and lease_state == "ready":
-        findings.append(AuditFinding("expired-worker-lease", "warning", "worker lease expired; task is safely recoverable from canonical Issue history"))
+        message = "worker lease expired; task is safely recoverable from canonical Issue history via lease-recovery semantics"
+        # Preserve the pre-v0.7 audit code for consumers while exposing the more
+        # precise worker-lease diagnostic. Both are derived/non-repairable and
+        # neither rewrites canonical Issue history.
+        findings.append(AuditFinding("expired-ack-presentation", "warning", message))
+        findings.append(AuditFinding("expired-worker-lease", "warning", message))
     elif lease_state == "quarantine":
         findings.append(AuditFinding("worker-retry-quarantine", "error", f"worker retry budget ({retry_budget}) is exhausted; preserve evidence and require orchestrator inspection"))
 
@@ -93,7 +98,10 @@ def _project_findings(task: Mapping[str, object], project: Mapping[str, object],
     names = sync.get("fields", {})
     status = reduce_task_status(task.get("comments", []))
     body_fields = protocol_fields(str(task.get("body", "")))
-    expected = {names.get("status", "Status"): mappings.get("status", {}).get(status), names.get("priority", "Priority"): mappings.get("priority", {}).get(body_fields.get("priority"))}
+    expected = {
+        names.get("status", "Status"): mappings.get("status", {}).get(status),
+        names.get("priority", "Priority"): mappings.get("priority", {}).get(body_fields.get("priority")),
+    }
     for field, value in expected.items():
         if value is not None and actual.get(field) != value:
             findings.append(AuditFinding("project-field-drift", "warning", f"Project field {field!r} expected {value!r}, got {actual.get(field)!r}", True))
