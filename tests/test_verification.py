@@ -67,3 +67,19 @@ def test_missing_runtime_cannot_prove_runtime_independence():
         [{"status": "VERIFIED", "reviewer": "r1"}],
         implementation_runtime="chatgpt",
     ).satisfied
+
+
+def test_missing_implementation_runtime_cannot_prove_runtime_independence():
+    policy = {"different_runtime": True}
+    decision = verification_decision(policy, [verified("r1", "gemini-spark")])
+    assert not decision.satisfied
+    assert decision.accepted_reviewers == ()
+    assert "required implementation runtime baseline is missing" in decision.reasons
+
+
+def test_missing_implementation_worker_cannot_prove_worker_independence():
+    policy = {"different_worker": True}
+    decision = verification_decision(policy, [verified("r1", "gemini-spark")])
+    assert not decision.satisfied
+    assert decision.accepted_reviewers == ()
+    assert "required implementation worker baseline is missing" in decision.reasons
