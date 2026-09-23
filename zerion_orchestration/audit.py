@@ -52,7 +52,7 @@ def audit_task(*, issue_body: str, comments: Iterable[str], labels: Iterable[str
     if actual_managed != expected:
         findings.append(AuditFinding("derived-label-drift", "warning", f"managed labels differ: expected={sorted(expected)} actual={sorted(actual_managed)}", True))
     if status == "claimed" and _expired_ack(comments, now):
-        findings.append(AuditFinding("expired-ack-presentation", "warning", "latest worker ACK lease is expired; canonical ACK is preserved but derived claimed presentation is stale", True))
+        findings.append(AuditFinding("expired-ack-presentation", "warning", "latest worker ACK lease is expired; canonical ACK and claimed presentation are preserved pending lease-recovery semantics"))
     if status == "accepted" and issue_open:
         findings.append(AuditFinding("accepted-open-mismatch", "warning", "accepted task Issue is still open"))
     if status == "needs_review":
