@@ -64,6 +64,9 @@ class ZerionProtocolV4Tests(unittest.TestCase):
             )
             self.assertNotIn("assigned", registry["github"]["status_labels"])
             self.assertTrue(registry["scheduler_bootstrap"]["enabled"])
+            self.assertEqual(
+                registry["defaults"]["max_pending_reviews_per_dispatcher"], 1
+            )
             self.assertEqual(registry["scheduler_bootstrap"]["source"], "pools")
             self.assertEqual(
                 registry["scheduler_bootstrap"]["instance_template"],
@@ -72,6 +75,17 @@ class ZerionProtocolV4Tests(unittest.TestCase):
             self.assertEqual(
                 registry["scheduler_bootstrap"]["schedule_minutes"]["gemini-spark"],
                 {"A": 37, "B": 7},
+            )
+            self.assertTrue(
+                registry["scheduler_bootstrap"]["orchestrator_schedule"]["enabled"]
+            )
+            self.assertEqual(
+                registry["scheduler_bootstrap"]["orchestrator_schedule"]["instance_template"],
+                "zerion-{runtime}-orchestrator",
+            )
+            self.assertEqual(
+                registry["scheduler_bootstrap"]["orchestrator_schedule"]["schedule_minutes"],
+                {"chatgpt": 7, "gemini-spark": 22},
             )
 
             self.assertEqual(
