@@ -41,6 +41,13 @@ def verification_decision(
     reasons: list[str] = []
     accepted: dict[str, Mapping[str, object]] = {}
 
+    implementation_worker = (implementation_worker or "").strip() or None
+    implementation_runtime = (implementation_runtime or "").strip() or None
+    if different_worker and implementation_worker is None:
+        reasons.append("required implementation worker baseline is missing")
+    if different_runtime and implementation_runtime is None:
+        reasons.append("required implementation runtime baseline is missing")
+
     for record in records:
         if str(record.get("status", "")) != "VERIFIED":
             continue
@@ -48,12 +55,13 @@ def verification_decision(
         if not reviewer:
             continue
         runtime = str(record.get("runtime", "")).strip() or None
-        if different_worker and implementation_worker and reviewer == implementation_worker:
+        if different_worker and (implementation_worker is None or reviewer == implementation_worker):
             continue
-        if different_runtime and implementation_runtime and runtime == implementation_runtime:
-            continue
-        # Missing runtime cannot prove a different-runtime requirement.
-        if different_runtime and implementation_runtime and runtime is None:
+        if different_runtime and (
+            implementation_runtime is None
+            or runtime is None
+            or runtime == implementation_runtime
+        ):
             continue
         accepted.setdefault(reviewer, record)
 
@@ -66,4 +74,8 @@ def verification_decision(
 
     if not reasons:
         reasons.append("independent verification policy satisfied")
-    return VerificationDecision(not any(r.startswith(("need ", "required ")) for r in reasons), tuple(sorted(accepted)), tuple(reasons))
+    return VerificationDecision(
+        not any(r.startswith(("need ", "required ")) for r in reasons),
+        tuple(sorted(accepted)),
+        tuple(reasons),
+    )
