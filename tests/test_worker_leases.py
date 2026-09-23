@@ -29,6 +29,7 @@ class WorkerLeaseTests(unittest.TestCase):
         comments = [ack(), ack(worker="w2", dispatcher="d2", at="2026-09-23T10:10:00Z")]
         lease = active_worker_lease(comments, datetime(2026, 9, 23, 10, 30, tzinfo=timezone.utc))
         self.assertEqual((lease.worker, lease.dispatcher), ("w1", "d1"))
+        self.assertEqual(retry_count(comments), 1)
 
     def test_owner_can_extend_but_not_shorten_or_rewind(self):
         comments = [
@@ -40,6 +41,12 @@ class WorkerLeaseTests(unittest.TestCase):
         self.assertEqual(lease.claimed_at.isoformat(), "2026-09-23T10:30:00+00:00")
         self.assertEqual(lease.expires_at.isoformat(), "2026-09-23T13:30:00+00:00")
         self.assertEqual(retry_count(comments), 1)
+
+    def test_compatibility_ack_renewal_does_not_consume_retry(self):
+        comments = [ack(hours="2"), ack(at="2026-09-23T10:30:00Z", hours="3")]
+        self.assertEqual(retry_count(comments), 1)
+        lease = active_worker_lease(comments, datetime(2026, 9, 23, 11, tzinfo=timezone.utc))
+        self.assertEqual(lease.expires_at.isoformat(), "2026-09-23T13:30:00+00:00")
 
     def test_terminal_report_consumes_lease(self):
         terminal = """[WORKER:w1:v1]
