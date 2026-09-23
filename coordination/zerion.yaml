@@ -6,6 +6,7 @@ orchestrator: orchestrator
 
 defaults:
   ack_lease_hours: 3
+  max_pending_reviews_per_dispatcher: 1
 
 github:
   task_transport: issue
@@ -74,6 +75,12 @@ scheduler_bootstrap:
     gemini-spark:
       A: 37
       B: 7
+  orchestrator_schedule:
+    enabled: true
+    instance_template: "zerion-{runtime}-orchestrator"
+    schedule_minutes:
+      chatgpt: 7
+      gemini-spark: 22
 
 projects:
   - example-project
