@@ -32,10 +32,17 @@ On each run:
 4. Read candidate Issue bodies and comments chronologically.
 5. Reconstruct task state from protocol events.
 6. Inspect linked PRs, commits, checks, proofs, experiments, and artifacts.
-7. Review unreviewed terminal worker results.
-8. Record ACCEPTED, REVISE, or REJECTED on the task Issue.
-9. Merge/finalize work only when evidence warrants it.
-10. Create the next bounded task Issue only when useful. New tasks enter the READY queue without a worker by default; pin `worker:` only when a specialist restriction is genuinely required.
+7. Before substantive review of an unreviewed terminal worker result, post an
+   `[ORCHESTRATOR-CLAIM:v1]` lease with `task_id`, stable `orchestrator`, `claimed_at`,
+   and `lease_hours` (plus optional `runtime` / `instance`). If another unexpired
+   orchestrator claim exists, skip that review. The same orchestrator may renew its
+   lease; expired claims are recoverable. Review claims are arbitration metadata and
+   do not change derived task status.
+8. Review the claimed terminal worker result.
+9. Record ACCEPTED, REVISE, or REJECTED on the task Issue. A terminal
+   `[ORCHESTRATOR-REVIEW:v1]` consumes the active review claim.
+10. Merge/finalize work only when evidence warrants it.
+11. Create the next bounded task Issue only when useful. New tasks enter the READY queue without a worker by default; pin `worker:` only when a specialist restriction is genuinely required.
 
 Do not use GitHub Project fields or derived labels as stronger evidence than the Issue history.
 
