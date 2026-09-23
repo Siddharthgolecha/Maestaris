@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
+import math
 import re
 from typing import Iterable
 
@@ -80,6 +82,26 @@ def validate_task_issue(
     return errors
 
 
+def _parse_time(value: str) -> datetime | None:
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        return parsed.astimezone(timezone.utc)
+    except (TypeError, ValueError):
+        return None
+
+
+def _parse_positive_finite_hours(value: str) -> float | None:
+    try:
+        hours = float(value)
+        if not math.isfinite(hours) or hours <= 0:
+            return None
+        return hours
+    except (TypeError, ValueError):
+        return None
+
+
 def validate_protocol_comment(body: str) -> list[str]:
     body = (body or "").strip()
     if not body:
@@ -111,6 +133,22 @@ def validate_protocol_comment(body: str) -> list[str]:
             )
         return errors
 
+    if body.startswith("[ORCHESTRATOR-CLAIM:v1]"):
+        errors = []
+        for key in ("task_id", "orchestrator", "claimed_at", "lease_hours"):
+            if not fields.get(key):
+                errors.append(f"orchestrator claim is missing {key}")
+        if fields.get("claimed_at") and _parse_time(fields["claimed_at"]) is None:
+            errors.append("orchestrator claim claimed_at must be an ISO timestamp")
+        if (
+            fields.get("lease_hours")
+            and _parse_positive_finite_hours(fields["lease_hours"]) is None
+        ):
+            errors.append(
+                "orchestrator claim lease_hours must be a positive finite number"
+            )
+        return errors
+
     if body.startswith("[ORCHESTRATOR-REVIEW:v1]"):
         errors = []
         if not fields.get("task_id"):
@@ -123,6 +161,77 @@ def validate_protocol_comment(body: str) -> list[str]:
         return errors
 
     return []
+
+
+def active_review_claim(
+    comments: Iterable[str],
+    now: datetime | None = None,
+) -> dict[str, str] | None:
+    now = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
+    active: dict[str, str] | None = None
+    active_claimed_at: datetime | None = None
+    active_expires_at: datetime | None = None
+
+    for raw in comments:
+        body = (raw or "").strip()
+        if body.startswith("[ORCHESTRATOR-CLAIM:v1]"):
+            fields = protocol_fields(body)
+            if not (
+                fields.get("task_id")
+                and fields.get("orchestrator")
+                and fields.get("claimed_at")
+                and fields.get("lease_hours")
+            ):
+                continue
+            claimed_at = _parse_time(fields["claimed_at"])
+            hours = _parse_positive_finite_hours(fields["lease_hours"])
+            if claimed_at is None or hours is None or claimed_at > now:
+                continue
+
+            try:
+                expires_at = claimed_at + timedelta(hours=hours)
+            except OverflowError:
+                continue
+
+            if active is not None and active_expires_at is not None:
+                if fields["orchestrator"] == active.get("orchestrator"):
+                    # A renewal may extend an owner's lease, but a stale or shorter
+                    # record must never rewind the authoritative interval.
+                    if (
+                        active_claimed_at is not None
+                        and claimed_at >= active_claimed_at
+                        and expires_at > active_expires_at
+                    ):
+                        active = fields
+                        active_claimed_at = claimed_at
+                        active_expires_at = expires_at
+                    continue
+                if claimed_at < active_expires_at:
+                    continue
+
+            active = fields
+            active_claimed_at = claimed_at
+            active_expires_at = expires_at
+
+        elif body.startswith("[ORCHESTRATOR-REVIEW:v1]"):
+            active = None
+            active_claimed_at = None
+            active_expires_at = None
+
+    if not active or active_expires_at is None:
+        return None
+    if active_expires_at <= now:
+        return None
+    return active
+
+
+def review_claim_available(
+    comments: Iterable[str],
+    orchestrator: str,
+    now: datetime | None = None,
+) -> bool:
+    active = active_review_claim(comments, now=now)
+    return active is None or active.get("orchestrator") == orchestrator
 
 
 def reduce_task_status(comments: Iterable[str]) -> str:
