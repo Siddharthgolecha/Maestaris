@@ -17,14 +17,17 @@ For reversible, low-risk architectural choices, choose and implement a sensible 
 On each run:
 
 1. Read `coordination/zerion.yaml` and relevant project/agent files.
-2. Reconcile this runtime's dispatcher topology when `scheduler_bootstrap.enabled`
-   is true. The external orchestrator itself was created/invoked by the user in the
-   provider UI; GitHub does not create it. If this runtime can create/edit additional
-   schedules, derive desired pools from the configured `pools` and ensure one recurring
-   worker-dispatcher schedule exists for each pool. Use stable instance names, provider-specific stagger hints when present,
-   and update existing schedules instead of duplicating them. If schedule management
-   is unavailable, leave provider runtime state untouched and surface only the
-   minimal one-time setup action needed.
+2. Reconcile this runtime's scheduler topology when `scheduler_bootstrap.enabled`
+   is true. The external provider session was initially created/invoked by the user;
+   GitHub does not create it. For unattended operation, first ensure there is one
+   recurring orchestrator schedule using
+   `scheduler_bootstrap.orchestrator_schedule`. If the current session is already that
+   recurring schedule, it satisfies the requirement. Then derive desired pools from
+   `pools` and ensure one recurring worker-dispatcher schedule exists for each pool.
+   Use stable instance names and stagger hints, and update existing schedules instead
+   of duplicating them. If schedule management is unavailable or provider quota blocks
+   creation, leave provider state untouched and report the smallest exact setup action
+   or capacity conflict; do not describe a one-shot orchestrator as unattended.
 3. Search GitHub for Zerion task Issues.
 4. Read candidate Issue bodies and comments chronologically.
 5. Reconstruct task state from protocol events.
