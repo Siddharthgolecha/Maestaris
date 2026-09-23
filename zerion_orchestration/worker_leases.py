@@ -97,19 +97,57 @@ def active_worker_lease(
 
 
 def retry_count(comments: Iterable[str]) -> int:
-    """Count distinct valid ACK attempts, ignoring renewals and duplicate polling."""
-    attempts: set[tuple[str, str, str]] = set()
+    """Count accepted ownership attempts, not harmless polling/renewal traffic.
+
+    A compatibility ACK from the current owner while its lease is still active is a
+    renewal, not a retry. Competing ACKs inside that active interval are ignored too.
+    A new ACK counts only after the prior lease has expired or ownership was consumed
+    by a terminal worker/orchestrator event.
+    """
+    count = 0
+    active: WorkerLeaseState | None = None
+    seen: set[tuple[str, str, str]] = set()
+
     for raw in comments:
         body = (raw or "").strip()
         fields = protocol_fields(body)
-        if not (body.startswith("[WORKER:") and fields.get("status") == "ACK"):
-            continue
-        worker = worker_from_event(body)
-        dispatcher = fields.get("dispatcher", "").strip()
-        claimed_at = fields.get("claimed_at", "").strip()
-        if worker and dispatcher and _time(claimed_at) is not None:
-            attempts.add((worker, dispatcher, claimed_at))
-    return len(attempts)
+        if body.startswith("[WORKER:") and fields.get("status") in {"ACK", "RENEW"}:
+            worker = worker_from_event(body)
+            dispatcher = fields.get("dispatcher", "").strip()
+            claimed_at = _time(fields.get("claimed_at", ""))
+            hours = _hours(fields.get("lease_hours", ""))
+            if not worker or not dispatcher or claimed_at is None or hours is None:
+                continue
+            try:
+                expires_at = claimed_at + timedelta(hours=hours)
+            except OverflowError:
+                continue
+            key = (worker, dispatcher, fields.get("claimed_at", "").strip())
+            if key in seen:
+                continue
+            seen.add(key)
+
+            if active is not None and active.expires_at > claimed_at:
+                same_owner = worker == active.worker and dispatcher == active.dispatcher
+                if same_owner and claimed_at >= active.claimed_at and expires_at > active.expires_at:
+                    active = WorkerLeaseState(worker, dispatcher, claimed_at, expires_at, active.attempt)
+                continue
+
+            # RENEW without an active lease cannot create a retry attempt. It is stale
+            # renewal traffic and must not consume the retry budget.
+            if fields.get("status") == "RENEW":
+                continue
+            count += 1
+            active = WorkerLeaseState(worker, dispatcher, claimed_at, expires_at, count)
+
+        elif body.startswith("[WORKER:") and fields.get("status") in {
+            "DONE", "BLOCKED", "NEEDS_REVIEW"
+        }:
+            active = None
+        elif body.startswith("[ORCHESTRATOR-REVIEW:v1]"):
+            active = None
+
+    return count
 
 
 def recovery_state(
