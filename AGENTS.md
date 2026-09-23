@@ -113,8 +113,9 @@ Use Zerion on OWNER/REPO as orchestrator.
 ```
 
 must be sufficient. The orchestrator reads this repository, discovers the desired
-topology, and bootstraps its own runtime's worker-dispatcher schedules when the current
-provider exposes schedule-management capabilities.
+topology, and bootstraps a recurring orchestrator loop plus its own runtime's
+worker-dispatcher schedules when the current provider exposes schedule-management
+capabilities. A one-shot orchestrator is not sufficient for unattended operation.
 
 The desired topology comes from `coordination/zerion.yaml`:
 
@@ -125,14 +126,18 @@ The desired topology comes from `coordination/zerion.yaml`:
 On orchestrator startup:
 
 1. inspect whether this runtime can list/create/edit schedules;
-2. derive the desired dispatcher set from the configured pools;
-3. if schedule management is available, ensure exactly one recurring dispatcher
+2. ensure exactly one recurring orchestrator schedule exists for this runtime using
+   `scheduler_bootstrap.orchestrator_schedule`; if the current session is already that
+   recurring schedule, it satisfies this requirement;
+3. derive the desired dispatcher set from the configured pools;
+4. if schedule management is available, ensure exactly one recurring dispatcher
    schedule exists for each desired pool for this runtime;
-4. use stable identities such as `zerion-gemini-spark-pool-A`;
-5. update an existing schedule rather than creating a duplicate;
-6. give every generated dispatcher the normal Zerion worker-pool instructions and a
+5. use stable identities such as `zerion-gemini-spark-orchestrator` and
+   `zerion-gemini-spark-pool-A`;
+6. update an existing schedule rather than creating a duplicate;
+7. give every generated dispatcher the normal Zerion worker-pool instructions and a
    unique `dispatcher:` / `runtime:` / `instance:` identity;
-7. re-check this topology on later orchestrator runs and repair missing/paused/drifted
+8. re-check this topology on later orchestrator runs and repair missing/paused/drifted
    schedules when safe.
 
 Live schedule objects remain provider-owned runtime state; GitHub stores only the
@@ -225,6 +230,12 @@ Post one of:
 - `NEEDS_REVIEW`
 
 on the task Issue with exact durable evidence.
+
+Before a dispatcher claims another task, count its terminal worker reports that do not
+yet have a later orchestrator review. If that count is at or above
+`defaults.max_pending_reviews_per_dispatcher`, stop and leave capacity for the
+orchestrator to review. This backpressure prevents an absent orchestrator from creating
+an unbounded PR/review backlog.
 
 ### Review
 
