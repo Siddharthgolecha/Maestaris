@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timezone
 import json
 from pathlib import Path
 import sys
@@ -168,8 +169,9 @@ def command_doctor(args: argparse.Namespace) -> int:
 def command_audit(args: argparse.Namespace) -> int:
     root = _root(args.root)
     registry = load_yaml(root / "coordination" / "zerion.yaml")
-    snapshot = json.loads(Path(args.input).read_text(encoding="utf-8"))
-    report = audit_snapshot(snapshot, registry["github"])
+    input_path = Path(args.input)
+    snapshot = json.loads(input_path.read_text(encoding="utf-8"))
+    report = audit_snapshot(snapshot, registry["github"], now=datetime.now(timezone.utc))
     if args.fix:
         repairs = []
         for task in snapshot.get("tasks", []):
@@ -185,8 +187,12 @@ def command_audit(args: argparse.Namespace) -> int:
                 repairs.append(
                     {"issue": task.get("number"), "kind": "labels", "desired": desired}
                 )
+                if not args.dry_run:
+                    task["labels"] = desired
         report["repairs"] = repairs
-        report["fix_mode"] = "dry-run" if args.dry_run else "plan-only"
+        report["fix_mode"] = "dry-run" if args.dry_run else "applied-to-snapshot"
+        if repairs and not args.dry_run:
+            input_path.write_text(json.dumps(snapshot, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     if args.json:
         print(json.dumps(report, indent=2, sort_keys=True))
     else:
@@ -208,9 +214,10 @@ def command_audit(args: argparse.Namespace) -> int:
                 f"{finding['code']}: {finding['message']}"
             )
         if args.fix:
+            action = "would update" if args.dry_run else "updated"
             print(
-                f"Safe derived repair plan: {len(report.get('repairs', []))} "
-                "label update(s); canonical history untouched"
+                f"Safe derived repair: {action} {len(report.get('repairs', []))} "
+                "snapshot label set(s); canonical Issue history untouched"
             )
     has_error = any(
         finding["severity"] == "error"
@@ -270,10 +277,10 @@ def build_parser() -> argparse.ArgumentParser:
     )
     audit.add_argument("--json", action="store_true")
     audit.add_argument(
-        "--fix", action="store_true", help="emit a safe derived-state repair plan only"
+        "--fix", action="store_true", help="repair derived labels in the supplied snapshot"
     )
     audit.add_argument(
-        "--dry-run", action="store_true", help="mark repair output explicitly as dry-run"
+        "--dry-run", action="store_true", help="with --fix, report repairs without changing the snapshot"
     )
     audit.set_defaults(func=command_audit)
 
