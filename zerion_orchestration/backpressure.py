@@ -25,6 +25,12 @@ def pending_review_for_dispatcher(comments: Iterable[str], dispatcher: str) -> b
 
 
 def revised_task_for_dispatcher(comments: Iterable[str], dispatcher: str) -> bool:
+    """Return whether this dispatcher must stay on a revised task.
+
+    A resumption ACK starts the revised attempt; it does not finish it.  Keep the
+    task admission-blocking until that resumed attempt emits a terminal worker
+    report.  At that point normal pending-review backpressure takes over.
+    """
     owned = False
     revise = False
     for body, fields in _events(comments):
@@ -32,7 +38,7 @@ def revised_task_for_dispatcher(comments: Iterable[str], dispatcher: str) -> boo
             event = fields.get("status")
             if event in {"ACK", *TERMINAL}:
                 owned = True
-            if event == "ACK" and revise:
+            if event in TERMINAL and revise:
                 revise = False
         elif body.startswith("[ORCHESTRATOR-REVIEW:v1]"):
             status = fields.get("status")
