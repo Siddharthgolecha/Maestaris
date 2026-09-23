@@ -24,6 +24,20 @@ class DispatcherBackpressureTests(unittest.TestCase):
         self.assertEqual(decision["resume"], "A")
         self.assertEqual(decision["reason"], "resume-revise")
 
+    def test_resumed_revise_remains_blocking_until_terminal(self):
+        active = {"A": [worker("NEEDS_REVIEW"), review("REVISE"), worker("ACK")]}
+        decision = dispatcher_admission(active, "D", 1)
+        self.assertFalse(decision["allow_new"])
+        self.assertEqual(decision["resume"], "A")
+        self.assertEqual(decision["reason"], "resume-revise")
+
+        terminal = {"A": [*active["A"], worker("NEEDS_REVIEW")]}
+        decision = dispatcher_admission(terminal, "D", 1)
+        self.assertFalse(decision["allow_new"])
+        self.assertIsNone(decision["resume"])
+        self.assertEqual(decision["reason"], "pending-review-limit")
+        self.assertEqual(decision["pending"], ("A",))
+
     def test_accept_or_reject_releases_capacity(self):
         for status in ("ACCEPTED", "REJECTED"):
             with self.subTest(status=status):
