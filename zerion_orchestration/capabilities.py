@@ -111,3 +111,22 @@ def capability_decision(
         preference_misses=preference_misses,
         reason="all hard task capabilities are satisfied",
     )
+
+
+def select_capability_eligible(
+    tasks: Iterable[tuple[str, str]],
+    available: Iterable[str] | None,
+) -> list[tuple[str, CapabilityDecision]]:
+    """Filter dispatcher candidates by hard capability compatibility.
+
+    Callers remain responsible for canonical task-state, dependency, ACK,
+    backpressure, and priority ordering before using soft preference matches as
+    a tie-breaker. This helper exists to make the pre-ACK capability gate
+    explicit in dispatcher-facing tooling rather than leaving it as prose only.
+    """
+    eligible: list[tuple[str, CapabilityDecision]] = []
+    for task_id, issue_body in tasks:
+        decision = capability_decision(issue_body, available)
+        if decision.eligible:
+            eligible.append((task_id, decision))
+    return eligible
