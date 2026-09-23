@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import unittest
 
-from zerion_orchestration.capabilities import capability_decision, list_field, task_capabilities
+from zerion_orchestration.capabilities import (
+    capability_decision,
+    list_field,
+    select_capability_eligible,
+    task_capabilities,
+)
 
 
 class CapabilityRoutingTests(unittest.TestCase):
@@ -47,6 +52,17 @@ objective: |
         self.assertEqual(required, frozenset({"python", "web"}))
         self.assertEqual(preferred, frozenset({"long-reasoning", "github-write"}))
         self.assertEqual(list_field("requires: []\n", "requires"), ())
+
+    def test_dispatcher_selection_rejects_incompatible_before_preferences(self):
+        tasks = [
+            ("formal", "requires: [lean, github-write]\nprefers: [web]\n"),
+            ("web", "requires: [web]\nprefers: [github-write]\n"),
+            ("legacy", "task_id: legacy\n"),
+        ]
+        selected = select_capability_eligible(tasks, ["web"])
+        self.assertEqual([task_id for task_id, _ in selected], ["web", "legacy"])
+        self.assertEqual(selected[0][1].preferred_matches, ())
+        self.assertTrue(all(decision.eligible for _, decision in selected))
 
 
 if __name__ == "__main__":
