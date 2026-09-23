@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import Counter
 from dataclasses import asdict, dataclass
+from datetime import datetime, timedelta, timezone
 from typing import Iterable, Mapping
 
 from .protocol import desired_managed_labels, is_managed_label, protocol_fields, reduce_task_status
@@ -15,7 +16,32 @@ class AuditFinding:
     repairable: bool = False
 
 
-def audit_task(*, issue_body: str, comments: Iterable[str], labels: Iterable[str], github_config: dict, issue_open: bool = True, linked_pr_count: int = 0, known_task_ids: Iterable[str] = ()) -> list[AuditFinding]:
+def _expired_ack(comments: Iterable[str], now: datetime | None) -> bool:
+    if now is None:
+        return False
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=timezone.utc)
+    for comment in reversed(tuple(comments)):
+        if "status: ACK" not in comment or "[WORKER:" not in comment:
+            continue
+        fields = {}
+        for line in comment.splitlines():
+            if ":" in line:
+                key, value = line.split(":", 1)
+                fields[key.strip()] = value.strip()
+        claimed_at = fields.get("claimed_at")
+        lease_hours = fields.get("lease_hours")
+        if not claimed_at or not lease_hours:
+            return False
+        try:
+            claimed = datetime.fromisoformat(claimed_at.replace("Z", "+00:00"))
+            return now >= claimed + timedelta(hours=float(lease_hours))
+        except (ValueError, TypeError):
+            return False
+    return False
+
+
+def audit_task(*, issue_body: str, comments: Iterable[str], labels: Iterable[str], github_config: dict, issue_open: bool = True, linked_pr_count: int = 0, known_task_ids: Iterable[str] = (), now: datetime | None = None) -> list[AuditFinding]:
     """Audit one task without mutating canonical Issue history."""
     comments = tuple(comments)
     findings: list[AuditFinding] = []
@@ -25,6 +51,8 @@ def audit_task(*, issue_body: str, comments: Iterable[str], labels: Iterable[str
     actual_managed = {label for label in labels if is_managed_label(label, github_config)}
     if actual_managed != expected:
         findings.append(AuditFinding("derived-label-drift", "warning", f"managed labels differ: expected={sorted(expected)} actual={sorted(actual_managed)}", True))
+    if status == "claimed" and _expired_ack(comments, now):
+        findings.append(AuditFinding("expired-ack-presentation", "warning", "latest worker ACK lease is expired; canonical ACK is preserved but derived claimed presentation is stale", True))
     if status == "accepted" and issue_open:
         findings.append(AuditFinding("accepted-open-mismatch", "warning", "accepted task Issue is still open"))
     if status == "needs_review":
@@ -93,7 +121,7 @@ def _project_findings(task: Mapping[str, object], project: Mapping[str, object],
     return findings
 
 
-def audit_snapshot(snapshot: Mapping[str, object], github_config: dict) -> dict:
+def audit_snapshot(snapshot: Mapping[str, object], github_config: dict, now: datetime | None = None) -> dict:
     tasks = list(snapshot.get("tasks", []))
     bodies = [str(task.get("body", "")) for task in tasks]
     known_ids = {tid for body in bodies if (tid := protocol_fields(body).get("task_id"))}
@@ -101,7 +129,7 @@ def audit_snapshot(snapshot: Mapping[str, object], github_config: dict) -> dict:
     project = snapshot.get("project")
     results = []
     for task in tasks:
-        findings = audit_task(issue_body=str(task.get("body", "")), comments=task.get("comments", []), labels=task.get("labels", []), github_config=github_config, issue_open=bool(task.get("open", True)), linked_pr_count=int(task.get("linked_pr_count", 0)), known_task_ids=known_ids)
+        findings = audit_task(issue_body=str(task.get("body", "")), comments=task.get("comments", []), labels=task.get("labels", []), github_config=github_config, issue_open=bool(task.get("open", True)), linked_pr_count=int(task.get("linked_pr_count", 0)), known_task_ids=known_ids, now=now)
         tid = protocol_fields(str(task.get("body", ""))).get("task_id")
         if tid in duplicates:
             findings.append(AuditFinding("duplicate-task-id", "error", f"task_id {tid!r} appears more than once"))
