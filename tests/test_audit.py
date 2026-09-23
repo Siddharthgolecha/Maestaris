@@ -19,11 +19,14 @@ class AuditTests(unittest.TestCase):
 
     def test_expired_ack_presentation_uses_explicit_clock(self):
         ack="[WORKER:w:v1]\ntask_id: t1\nstatus: ACK\nclaimed_at: 2026-09-23T00:00:00Z\nlease_hours: 3\n"
-        active=audit_task(issue_body=BODY,comments=[ack],labels=["zerion:task","zerion:claimed","priority:P0"],github_config=CONFIG,now=datetime(2026,9,23,2,tzinfo=timezone.utc))
-        expired=audit_task(issue_body=BODY,comments=[ack],labels=["zerion:task","zerion:claimed","priority:P0"],github_config=CONFIG,now=datetime(2026,9,23,4,tzinfo=timezone.utc))
+        labels=["zerion:task","zerion:claimed","priority:P0","custom"]
+        active=audit_task(issue_body=BODY,comments=[ack],labels=labels,github_config=CONFIG,now=datetime(2026,9,23,2,tzinfo=timezone.utc))
+        expired=audit_task(issue_body=BODY,comments=[ack],labels=labels,github_config=CONFIG,now=datetime(2026,9,23,4,tzinfo=timezone.utc))
         self.assertFalse(any(f.code=="expired-ack-presentation" for f in active))
         finding=next(f for f in expired if f.code=="expired-ack-presentation")
-        self.assertTrue(finding.repairable)
+        self.assertFalse(finding.repairable)
+        self.assertIn("lease-recovery", finding.message)
+        self.assertEqual(reconcile_labels(BODY,[ack],labels,CONFIG),set(labels))
 
     def test_unreviewed_terminal_is_diagnostic_not_repairable(self):
         comments=["[WORKER:w:v1]\ntask_id: t1\nstatus: NEEDS_REVIEW\nsummary: done\n"]
