@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import unittest
+from datetime import datetime, timezone
 
 from zerion_orchestration.audit import audit_snapshot, audit_task, duplicate_task_ids, reconcile_labels
 
-CONFIG = {"task_label":"zerion:task","status_labels":{"ready":"zerion:ready","claimed":"zerion:claimed","blocked":"zerion:blocked","needs_review":"zerion:needs-review","accepted":"zerion:accepted","revise":"zerion:revise","rejected":"zerion:rejected"},"priority_label_prefix":"priority:","projects":{"field_sync":{"fields":{"priority":"Priority","status":"Status"},"mappings":{"priority":{"P0":"P0"},"status":{"ready":"Todo","accepted":"Done"}}}}}
+CONFIG = {"task_label":"zerion:task","status_labels":{"ready":"zerion:ready","claimed":"zerion:claimed","blocked":"zerion:blocked","needs_review":"zerion:needs-review","accepted":"zerion:accepted","revise":"zerion:revise","rejected":"zerion:rejected"},"priority_label_prefix":"priority:","projects":{"field_sync":{"fields":{"priority":"Priority","status":"Status"},"mappings":{"priority":{"P0":"P0"},"status":{"ready":"Todo","claimed":"In Progress","accepted":"Done"}}}}}
 BODY = "[ORCHESTRATOR:v1]\ntask_id: t1\nproject: zerion\npriority: P0\ndepends_on:\n  []\nobjective: test\n"
 
 class AuditTests(unittest.TestCase):
@@ -15,6 +16,14 @@ class AuditTests(unittest.TestCase):
         findings=audit_task(issue_body=BODY, comments=[], labels=["zerion:task","zerion:claimed","custom"], github_config=CONFIG)
         self.assertTrue(any(f.code=="derived-label-drift" and f.repairable for f in findings))
         self.assertEqual(reconcile_labels(BODY,[],["zerion:claimed","custom"],CONFIG),{"zerion:task","zerion:ready","priority:P0","custom"})
+
+    def test_expired_ack_presentation_uses_explicit_clock(self):
+        ack="[WORKER:w:v1]\ntask_id: t1\nstatus: ACK\nclaimed_at: 2026-09-23T00:00:00Z\nlease_hours: 3\n"
+        active=audit_task(issue_body=BODY,comments=[ack],labels=["zerion:task","zerion:claimed","priority:P0"],github_config=CONFIG,now=datetime(2026,9,23,2,tzinfo=timezone.utc))
+        expired=audit_task(issue_body=BODY,comments=[ack],labels=["zerion:task","zerion:claimed","priority:P0"],github_config=CONFIG,now=datetime(2026,9,23,4,tzinfo=timezone.utc))
+        self.assertFalse(any(f.code=="expired-ack-presentation" for f in active))
+        finding=next(f for f in expired if f.code=="expired-ack-presentation")
+        self.assertTrue(finding.repairable)
 
     def test_unreviewed_terminal_is_diagnostic_not_repairable(self):
         comments=["[WORKER:w:v1]\ntask_id: t1\nstatus: NEEDS_REVIEW\nsummary: done\n"]
