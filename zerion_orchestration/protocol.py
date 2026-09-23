@@ -101,10 +101,13 @@ def validate_protocol_comment(body: str) -> list[str]:
             for key in ("dispatcher", "claimed_at", "lease_hours"):
                 if not fields.get(key):
                     errors.append(f"{status} is missing {key}")
-            if fields.get("claimed_at") and _parse_time(fields["claimed_at"]) is None:
-                errors.append(f"{status} claimed_at must be an ISO timestamp")
-            if fields.get("lease_hours") and _parse_positive_finite_hours(fields["lease_hours"]) is None:
-                errors.append(f"{status} lease_hours must be a positive finite number")
+            # ACK predates strict lease parsing and existing v0.6 histories may use
+            # symbolic timestamps such as `now`. Preserve that compatibility while
+            # making the new first-class RENEW event mechanically well-formed.
+            if status == "RENEW" and fields.get("claimed_at") and _parse_time(fields["claimed_at"]) is None:
+                errors.append("RENEW claimed_at must be an ISO timestamp")
+            if status == "RENEW" and fields.get("lease_hours") and _parse_positive_finite_hours(fields["lease_hours"]) is None:
+                errors.append("RENEW lease_hours must be a positive finite number")
         elif status in WORKER_TERMINAL:
             if "summary" not in fields and "## Summary" not in body:
                 errors.append(f"{status} event must include summary")
