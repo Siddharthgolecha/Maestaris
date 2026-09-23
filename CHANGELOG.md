@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.2
+
+- Fix dogfooding failure where worker pools could accumulate NEEDS_REVIEW results without a recurring Zerion orchestrator.
+- Add desired recurring orchestrator schedules to scheduler bootstrap topology.
+- Add configurable review backpressure with one pending unreviewed terminal result per dispatcher by default.
+- Clarify that one-shot orchestrator bootstrap is insufficient for unattended operation.
+- Add validation and initialization coverage for the new topology.
+
 ## 0.6.1
 
 - Add a reusable GitHub workflow for consumer repositories to validate Zerion protocol events and synchronize derived Issue labels.
