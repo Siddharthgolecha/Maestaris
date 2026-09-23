@@ -15,69 +15,48 @@ def _events(comments: Iterable[str]):
 
 
 def pending_review_for_dispatcher(comments: Iterable[str], dispatcher: str) -> bool:
-    """Whether this task has this dispatcher's terminal result awaiting review."""
     pending = False
     for body, fields in _events(comments):
-        if body.startswith("[WORKER:"):
-            if fields.get("status") in TERMINAL and fields.get("dispatcher") == dispatcher:
-                pending = True
+        if body.startswith("[WORKER:") and fields.get("status") in TERMINAL and fields.get("dispatcher") == dispatcher:
+            pending = True
         elif body.startswith("[ORCHESTRATOR-REVIEW:v1]") and fields.get("status") in REVIEWS:
             pending = False
     return pending
 
 
 def revised_task_for_dispatcher(comments: Iterable[str], dispatcher: str) -> bool:
-    """Whether the latest review requires this dispatcher to resume its task."""
     owned = False
     revise = False
     for body, fields in _events(comments):
         if body.startswith("[WORKER:") and fields.get("dispatcher") == dispatcher:
-            if fields.get("status") in {"ACK", *TERMINAL}:
+            event = fields.get("status")
+            if event in {"ACK", *TERMINAL}:
                 owned = True
+            if event == "ACK" and revise:
+                revise = False
         elif body.startswith("[ORCHESTRATOR-REVIEW:v1]"):
             status = fields.get("status")
             if status == "REVISE" and owned:
                 revise = True
             elif status in {"ACCEPTED", "REJECTED"}:
                 revise = False
-        elif body.startswith("[WORKER:") and fields.get("dispatcher") == dispatcher:
-            if fields.get("status") == "ACK" and revise:
-                # The revised task has been resumed; it remains the dispatcher's work,
-                # but should not be counted as an unreviewed terminal result.
-                revise = False
     return revise
 
 
-def pending_review_tasks(
-    histories: Mapping[str, Iterable[str]], dispatcher: str
-) -> tuple[str, ...]:
-    return tuple(
-        task_id
-        for task_id, comments in histories.items()
-        if pending_review_for_dispatcher(comments, dispatcher)
-    )
+def pending_review_tasks(histories: Mapping[str, Iterable[str]], dispatcher: str) -> tuple[str, ...]:
+    return tuple(task_id for task_id, comments in histories.items() if pending_review_for_dispatcher(comments, dispatcher))
 
 
-def revised_tasks(
-    histories: Mapping[str, Iterable[str]], dispatcher: str
-) -> tuple[str, ...]:
-    return tuple(
-        task_id
-        for task_id, comments in histories.items()
-        if revised_task_for_dispatcher(comments, dispatcher)
-    )
+def revised_tasks(histories: Mapping[str, Iterable[str]], dispatcher: str) -> tuple[str, ...]:
+    return tuple(task_id for task_id, comments in histories.items() if revised_task_for_dispatcher(comments, dispatcher))
 
 
-def dispatcher_admission(
-    histories: Mapping[str, Iterable[str]],
-    dispatcher: str,
-    max_pending_reviews: int,
-) -> dict[str, object]:
-    """Pure admission gate to apply before ACKing unrelated READY work.
+def dispatcher_admission(histories: Mapping[str, Iterable[str]], dispatcher: str, max_pending_reviews: int) -> dict[str, object]:
+    """Gate unrelated ACKs using canonical Issue histories.
 
-    REVISE resumption has precedence. Otherwise an at-capacity pending-review queue
-    blocks new claims. The returned explanation is suitable for deterministic tests
-    and conversational/scheduled dispatchers.
+    A REVISE must be resumed before unrelated work. Otherwise the configured pending
+    review limit blocks new claims. Worker identity is irrelevant: accounting is by
+    dispatcher, so multiple specialists sharing one scheduled dispatcher share capacity.
     """
     revised = revised_tasks(histories, dispatcher)
     pending = pending_review_tasks(histories, dispatcher)
@@ -89,11 +68,7 @@ def dispatcher_admission(
 
 
 def mistaken_ack_recovery(comments: Iterable[str], dispatcher: str) -> str | None:
-    """Return the safe action for an ACK posted while backpressure should block it.
-
-    Canonical history is never rewritten: leave the mistaken ACK in place and stop
-    before substantive execution. The orchestrator can review/reconcile it explicitly.
-    """
+    """Preserve a mistaken ACK but stop before substantive execution."""
     for body, fields in reversed(list(_events(comments))):
         if body.startswith("[WORKER:") and fields.get("status") == "ACK" and fields.get("dispatcher") == dispatcher:
             return "stop-without-rewrite"
