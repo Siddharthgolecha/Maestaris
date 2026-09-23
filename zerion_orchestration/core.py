@@ -83,7 +83,10 @@ def build_registry() -> dict[str, Any]:
         "entrypoint": "AGENTS.md",
         "canonical_branch": "main",
         "orchestrator": "orchestrator",
-        "defaults": {"ack_lease_hours": 3},
+        "defaults": {
+            "ack_lease_hours": 3,
+            "max_pending_reviews_per_dispatcher": 1,
+        },
         "github": {
             "task_transport": "issue",
             "task_title_prefix": "[Zerion task]",
@@ -150,6 +153,14 @@ def build_registry() -> dict[str, Any]:
             "schedule_minutes": {
                 "chatgpt": {"A": 22, "B": 52},
                 "gemini-spark": {"A": 37, "B": 7},
+            },
+            "orchestrator_schedule": {
+                "enabled": True,
+                "instance_template": "zerion-{runtime}-orchestrator",
+                "schedule_minutes": {
+                    "chatgpt": 7,
+                    "gemini-spark": 22,
+                },
             },
         },
         "projects": [],
@@ -243,6 +254,12 @@ def validate_repository(root: Path) -> ValidationResult:
         lease = defaults.get("ack_lease_hours")
         if not isinstance(lease, int) or lease < 1:
             errors.append(f"{registry_path}: defaults.ack_lease_hours must be >= 1")
+        pending_reviews = defaults.get("max_pending_reviews_per_dispatcher")
+        if not isinstance(pending_reviews, int) or pending_reviews < 1:
+            errors.append(
+                f"{registry_path}: defaults.max_pending_reviews_per_dispatcher "
+                "must be >= 1"
+            )
 
         github = registry.get("github")
         if not isinstance(github, dict):
@@ -314,6 +331,35 @@ def validate_repository(root: Path) -> ValidationResult:
                                 errors.append(
                                     f"{registry_path}: schedule minute for "
                                     f"{runtime_name}/{pool_name} must be 0..59"
+                                )
+
+                orchestrator_schedule = bootstrap.get("orchestrator_schedule") or {}
+                if not isinstance(orchestrator_schedule, dict):
+                    errors.append(
+                        f"{registry_path}: scheduler_bootstrap.orchestrator_schedule "
+                        "must be a mapping"
+                    )
+                else:
+                    orchestrator_template = orchestrator_schedule.get("instance_template")
+                    if orchestrator_template and "{runtime}" not in str(orchestrator_template):
+                        errors.append(
+                            f"{registry_path}: orchestrator_schedule.instance_template "
+                            "must include {runtime}"
+                        )
+                    orchestrator_minutes = (
+                        orchestrator_schedule.get("schedule_minutes") or {}
+                    )
+                    if not isinstance(orchestrator_minutes, dict):
+                        errors.append(
+                            f"{registry_path}: orchestrator_schedule.schedule_minutes "
+                            "must be a mapping"
+                        )
+                    else:
+                        for runtime_name, minute in orchestrator_minutes.items():
+                            if not isinstance(minute, int) or not 0 <= minute <= 59:
+                                errors.append(
+                                    f"{registry_path}: orchestrator schedule minute for "
+                                    f"{runtime_name} must be 0..59"
                                 )
 
         if not isinstance(registry.get("projects"), list):

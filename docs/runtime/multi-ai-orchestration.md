@@ -96,20 +96,23 @@ invokes that orchestrator in ChatGPT, Gemini Spark, Claude, or another runtime. 
 cannot create a provider-owned chat/task on its own. After that, the repository should
 carry everything needed for the orchestrator to configure the rest.
 
-When `scheduler_bootstrap.enabled` is true, an orchestrator should read the configured
-`pools` and reconcile its own runtime's dispatcher schedules. A provider that supports
-schedule management should create the missing schedules, update drifted ones, and avoid
-duplicates by using stable instance names.
+When `scheduler_bootstrap.enabled` is true, an orchestrator should reconcile **two
+layers**: one recurring orchestrator schedule for its runtime, then the configured
+worker-pool dispatcher schedules. A provider that supports schedule management should
+create missing schedules, update drifted ones, and avoid duplicates by using stable
+instance names. A one-shot bootstrap chat is not enough for unattended operation
+because terminal worker results still require independent recurring review.
 
 For the default Zerion topology:
 
 ```text
 pools: A, B
 
-Gemini Spark orchestrator
+Gemini Spark bootstrap session
+  -> ensures zerion-gemini-spark-orchestrator exists and recurs
   -> ensures zerion-gemini-spark-pool-A exists
   -> ensures zerion-gemini-spark-pool-B exists
-  -> keeps them hourly and staggered
+  -> keeps all three hourly and staggered
 ```
 
 This makes the user-facing bootstrap:
@@ -123,8 +126,9 @@ prompt: "Use Zerion on OWNER/REPO as orchestrator."
       |
       +--> orchestrator reads AGENTS.md + coordination/zerion.yaml
       +--> discovers pools / cadence / identities / protocol
-      +--> creates or reconciles its provider-owned worker schedules
-      +--> worker schedules service the shared READY queue
+      +--> creates or reconciles a recurring orchestrator schedule
+      +--> creates or reconciles provider-owned worker schedules
+      +--> orchestrator reviews terminal results; workers service READY queue
 ```
 
 GitHub is the bootstrap memory and desired-state source; the provider remains the
@@ -144,11 +148,14 @@ Read AGENTS.md and coordination/zerion.yaml first. Treat GitHub as the durable s
 of record.
 
 On startup, inspect scheduler_bootstrap and the configured pools. Because Gemini Spark
-supports conversational schedule management, ensure this task has one recurring Spark
-worker-dispatcher schedule for every configured Zerion pool.
+supports conversational schedule management, ensure there is one recurring Spark
+orchestrator schedule plus one recurring worker-dispatcher schedule for every configured
+Zerion pool. If this task is already the recurring orchestrator schedule, do not create
+a duplicate.
 
-Use stable schedule/instance names from the configured template. For the default
+Use stable schedule/instance names from the configured templates. For the default
 configuration create/reconcile:
+- zerion-gemini-spark-orchestrator, hourly, using the configured orchestrator minute;
 - zerion-gemini-spark-pool-A, hourly, using the configured Pool A minute hint;
 - zerion-gemini-spark-pool-B, hourly, using the configured Pool B minute hint.
 
@@ -224,3 +231,15 @@ The orchestrator should not care which model provider completed a task. Review:
 
 Provider/runtime metadata is useful for debugging, capacity planning, and Project
 dashboards, not for deciding whether evidence is true.
+
+
+## Review backpressure
+
+Worker throughput must not hide a failed reviewer. Before a dispatcher claims another
+READY task, it counts terminal reports it previously posted that still lack a later
+orchestrator review. When that count reaches
+`defaults.max_pending_reviews_per_dispatcher`, the dispatcher stops claiming new work.
+
+The default is 1. This keeps one completed task waiting for review without allowing an
+absent orchestrator to drain the entire READY queue into an ever-growing PR backlog.
+Projects that intentionally pipeline more review work may raise the limit.

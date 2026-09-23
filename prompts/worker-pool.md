@@ -7,18 +7,21 @@ Dispatchers should not constrain specialists to the original template structure.
 On each polling run:
 
 1. Read global/project/agent configuration.
-2. Search open GitHub Issues carrying the configured Zerion task label.
-3. Prefer Issues in derived state `ready` or `revise`.
-4. Inspect structured project/priority/dependency fields.
-5. If the Issue contains `worker:`, only that specialist is eligible. If it does not, choose any active specialist in this pool whose role/project paths fit the task.
-6. Read Issue comments before trusting labels.
-7. Skip tasks with terminal results, later terminal reviews, unmet dependencies, or another unexpired ACK.
-8. Select the highest-priority eligible task, respecting `max_tasks_per_run`.
-9. Claim it by posting ACK as the selected named worker. The ACK establishes task ownership.
-10. Read relevant canonical project paths.
-11. For repository work, create a task branch and linked draft PR early.
-12. Execute and verify the bounded assignment.
-13. Post DONE, BLOCKED, or NEEDS_REVIEW with durable evidence.
+2. Search task Issues for terminal worker reports previously posted by this dispatcher
+   that have no later orchestrator review. If their count is at or above
+   `defaults.max_pending_reviews_per_dispatcher`, do not claim new work this run.
+3. Search open GitHub Issues carrying the configured Zerion task label.
+4. Prefer Issues in derived state `ready` or `revise`.
+5. Inspect structured project/priority/dependency fields.
+6. If the Issue contains `worker:`, only that specialist is eligible. If it does not, choose any active specialist in this pool whose role/project paths fit the task.
+7. Read Issue comments before trusting labels.
+8. Skip tasks with terminal results, later terminal reviews, unmet dependencies, or another unexpired ACK.
+9. Select the highest-priority eligible task, respecting `max_tasks_per_run`.
+10. Claim it by posting ACK as the selected named worker. The ACK establishes task ownership.
+11. Read relevant canonical project paths.
+12. For repository work, create a task branch and linked draft PR early.
+13. Execute and verify the bounded assignment.
+14. Post DONE, BLOCKED, or NEEDS_REVIEW with durable evidence.
 
 GitHub labels are derived hints for discovery. The Issue event history is canonical.
 
