@@ -4,7 +4,8 @@ from collections.abc import Iterable, Mapping
 
 from .protocol import protocol_fields
 
-TERMINAL = {"DONE", "BLOCKED", "NEEDS_REVIEW"}
+REVIEW_BACKPRESSURE = {"DONE", "NEEDS_REVIEW"}
+ATTEMPT_TERMINAL = {"DONE", "BLOCKED", "NEEDS_REVIEW"}
 REVIEWS = {"ACCEPTED", "REVISE", "REJECTED"}
 
 
@@ -17,7 +18,7 @@ def _events(comments: Iterable[str]):
 def pending_review_for_dispatcher(comments: Iterable[str], dispatcher: str) -> bool:
     pending = False
     for body, fields in _events(comments):
-        if body.startswith("[WORKER:") and fields.get("status") in TERMINAL and fields.get("dispatcher") == dispatcher:
+        if body.startswith("[WORKER:") and fields.get("status") in REVIEW_BACKPRESSURE and fields.get("dispatcher") == dispatcher:
             pending = True
         elif body.startswith("[ORCHESTRATOR-REVIEW:v1]") and fields.get("status") in REVIEWS:
             pending = False
@@ -36,9 +37,9 @@ def revised_task_for_dispatcher(comments: Iterable[str], dispatcher: str) -> boo
     for body, fields in _events(comments):
         if body.startswith("[WORKER:") and fields.get("dispatcher") == dispatcher:
             event = fields.get("status")
-            if event in {"ACK", *TERMINAL}:
+            if event in {"ACK", *ATTEMPT_TERMINAL}:
                 owned = True
-            if event in TERMINAL and revise:
+            if event in ATTEMPT_TERMINAL and revise:
                 revise = False
         elif body.startswith("[ORCHESTRATOR-REVIEW:v1]"):
             status = fields.get("status")
