@@ -140,6 +140,12 @@ On orchestrator startup:
 8. re-check this topology on later orchestrator runs and repair missing/paused/drifted
    schedules when safe.
 
+A scheduled worker dispatcher must never disable, pause, or delete its own recurring
+schedule because one task is blocked or because one invocation encounters a connector,
+tool-auth, provider, or write failure. Such failures end at most the current poll. The
+next scheduled poll retries from canonical GitHub state. Only explicit user intent or
+canonical topology reconciliation may remove or disable a dispatcher schedule.
+
 Live schedule objects remain provider-owned runtime state; GitHub stores only the
 desired topology, instructions, and all durable task/evidence state. Never claim that
 GitHub itself created a ChatGPT/Gemini/Claude schedule.
@@ -280,9 +286,25 @@ When a repository configures optional Project field synchronization, Maestaris m
 
 ## Blocking and dormancy
 
-A precise blocker is a valid result.
+A precise blocker is a valid result, but blocking is **task-local by default**, not
+dispatcher-global.
 
-Dormancy is healthy. Do not invent work merely to keep workers active.
+When a claimed task cannot progress:
+
+- preserve/post the BLOCKED evidence when GitHub writes are available;
+- stop work on that issue until its blocker changes;
+- do not let that BLOCKED task consume pending-review backpressure;
+- immediately continue to another independent eligible task when one exists;
+- if the blocker is a transient runtime/connector failure that prevents even the ACK or
+  BLOCKED write, do no unowned substantive work and end only the current poll; keep the
+  recurring schedule enabled so the next poll can retry.
+
+A BLOCKED attempt does not consume the pool's productive `max_tasks_per_run` allowance.
+This prevents one stuck issue from wasting a dispatcher cycle while preserving the
+blocked evidence for later recovery.
+
+Dormancy is healthy only when there is genuinely no independent eligible work. Do not
+invent work merely to keep workers active.
 
 ## Repository-local instructions
 
