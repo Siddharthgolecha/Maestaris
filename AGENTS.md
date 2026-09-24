@@ -140,11 +140,12 @@ On orchestrator startup:
 8. re-check this topology on later orchestrator runs and repair missing/paused/drifted
    schedules when safe.
 
-A scheduled worker dispatcher must never disable, pause, or delete its own recurring
-schedule because one task is blocked or because one invocation encounters a connector,
-tool-auth, provider, or write failure. Such failures end at most the current poll. The
-next scheduled poll retries from canonical GitHub state. Only explicit user intent or
-canonical topology reconciliation may remove or disable a dispatcher schedule.
+Every recurring Maestaris role — orchestrator, worker dispatcher, or auditor — must never
+disable, pause, or delete its own recurring schedule because one task/review is blocked
+or because one invocation encounters a connector, tool-auth, provider, or write failure.
+Such failures end at most the affected candidate or current poll. The next scheduled
+poll retries from canonical GitHub state. Only explicit user intent or canonical
+topology reconciliation may remove or disable a recurring Maestaris schedule.
 
 Live schedule objects remain provider-owned runtime state; GitHub stores only the
 desired topology, instructions, and all durable task/evidence state. Never claim that
@@ -286,8 +287,8 @@ When a repository configures optional Project field synchronization, Maestaris m
 
 ## Blocking and dormancy
 
-A precise blocker is a valid result, but blocking is **task-local by default**, not
-dispatcher-global.
+A precise blocker is a valid result, but blocking is **candidate-local by default**, not
+role-global. For workers the candidate is a task; for orchestrators it is a review.
 
 When a claimed task cannot progress:
 
@@ -303,8 +304,13 @@ A BLOCKED attempt does not consume the pool's productive `max_tasks_per_run` all
 This prevents one stuck issue from wasting a dispatcher cycle while preserving the
 blocked evidence for later recovery.
 
-Dormancy is healthy only when there is genuinely no independent eligible work. Do not
-invent work merely to keep workers active.
+For orchestrators, an unavailable review claim, pending CI, stale/temporarily
+non-mergeable PR, or evidence gap on one candidate must not prevent inspection of other
+independent unreviewed terminal results. If a review cannot safely proceed, leave that
+candidate unresolved and continue to the next one in the same poll when possible.
+
+Dormancy is healthy only when there is genuinely no independent eligible work or review.
+Do not invent work merely to keep roles active.
 
 ## Repository-local instructions
 
