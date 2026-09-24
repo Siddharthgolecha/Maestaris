@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from collections import Counter
 from dataclasses import asdict, dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 from typing import Iterable, Mapping
 
 from .protocol import desired_managed_labels, is_managed_label, protocol_fields, reduce_task_status
+from .worker_leases import recovery_state
 
 
 @dataclass(frozen=True)
@@ -14,31 +15,6 @@ class AuditFinding:
     severity: str
     message: str
     repairable: bool = False
-
-
-def _expired_ack(comments: Iterable[str], now: datetime | None) -> bool:
-    if now is None:
-        return False
-    if now.tzinfo is None:
-        now = now.replace(tzinfo=timezone.utc)
-    for comment in reversed(tuple(comments)):
-        if "status: ACK" not in comment or "[WORKER:" not in comment:
-            continue
-        fields = {}
-        for line in comment.splitlines():
-            if ":" in line:
-                key, value = line.split(":", 1)
-                fields[key.strip()] = value.strip()
-        claimed_at = fields.get("claimed_at")
-        lease_hours = fields.get("lease_hours")
-        if not claimed_at or not lease_hours:
-            return False
-        try:
-            claimed = datetime.fromisoformat(claimed_at.replace("Z", "+00:00"))
-            return now >= claimed + timedelta(hours=float(lease_hours))
-        except (ValueError, TypeError):
-            return False
-    return False
 
 
 def audit_task(*, issue_body: str, comments: Iterable[str], labels: Iterable[str], github_config: dict, issue_open: bool = True, linked_pr_count: int = 0, known_task_ids: Iterable[str] = (), now: datetime | None = None) -> list[AuditFinding]:
@@ -51,8 +27,19 @@ def audit_task(*, issue_body: str, comments: Iterable[str], labels: Iterable[str
     actual_managed = {label for label in labels if is_managed_label(label, github_config)}
     if actual_managed != expected:
         findings.append(AuditFinding("derived-label-drift", "warning", f"managed labels differ: expected={sorted(expected)} actual={sorted(actual_managed)}", True))
-    if status == "claimed" and _expired_ack(comments, now):
-        findings.append(AuditFinding("expired-ack-presentation", "warning", "latest worker ACK lease is expired; canonical ACK and claimed presentation are preserved pending lease-recovery semantics"))
+
+    retry_budget = int(github_config.get("worker_retry_budget", github_config.get("defaults", {}).get("worker_retry_budget", 3)))
+    lease_state = recovery_state(comments, retry_budget=retry_budget, now=now)
+    if status == "claimed" and lease_state == "ready":
+        message = "worker lease expired; task is safely recoverable from canonical Issue history via lease-recovery semantics"
+        # Preserve the pre-v0.7 audit code for consumers while exposing the more
+        # precise worker-lease diagnostic. Both are derived/non-repairable and
+        # neither rewrites canonical Issue history.
+        findings.append(AuditFinding("expired-ack-presentation", "warning", message))
+        findings.append(AuditFinding("expired-worker-lease", "warning", message))
+    elif lease_state == "quarantine":
+        findings.append(AuditFinding("worker-retry-quarantine", "error", f"worker retry budget ({retry_budget}) is exhausted; preserve evidence and require orchestrator inspection"))
+
     if status == "accepted" and issue_open:
         findings.append(AuditFinding("accepted-open-mismatch", "warning", "accepted task Issue is still open"))
     if status == "needs_review":
