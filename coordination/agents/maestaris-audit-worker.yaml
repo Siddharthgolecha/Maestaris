@@ -1,0 +1,12 @@
+schema: 1
+agent: maestaris-audit-worker
+project: maestaris
+role: consistency-and-evidence-audit
+dispatcher_pool: A
+status: active
+
+control_plane:
+  transport: github_issue
+
+project_paths:
+  - .
