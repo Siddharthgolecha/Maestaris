@@ -4,6 +4,8 @@
 
 Maestaris is a lightweight orchestration protocol for running **long-lived projects with ordinary web-hosted LLM conversations**.
 
+Maestaris does **not** require those conversations to be autonomous "agents." Its basic runtime is a model session—such as an ordinary ChatGPT or Gemini web conversation—taking a worker or orchestrator role. API agents, local coding agents, and event-driven runtimes are optional integrations that use the same durable protocol.
+
 It came from a practical problem: one ChatGPT chat can do serious work, but long research and engineering projects quickly outgrow one conversation. You want an orchestrator, specialist workers, parallel branches, reproducible evidence, hand-offs, and the ability to close a chat and come back later without losing the project.
 
 Maestaris makes GitHub the durable coordination layer.
@@ -78,7 +80,7 @@ evidence is durable and inspectable
         +
 negative/blocking results are not erased
         +
-provenance survives agent/chat turnover
+provenance survives model-session/runtime turnover
 ```
 
 For reversible low-risk choices, the runtime should make a reasonable decision and continue rather than repeatedly asking the user for implementation preferences.
@@ -98,7 +100,7 @@ It does not require:
 - a daemon running on your computer;
 - a CLI in order for the AI workers to operate.
 
-There is a small CLI for static setup and validation, but the protocol is designed so an AI agent can operate directly through GitHub.
+There is a small CLI for static setup and validation, but the protocol is designed so an LLM runtime can operate directly through GitHub.
 
 ## The important constraint: GitHub cannot wake an ordinary chat
 
