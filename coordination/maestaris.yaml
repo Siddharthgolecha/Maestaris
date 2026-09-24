@@ -6,7 +6,7 @@ orchestrator: orchestrator
 
 defaults:
   ack_lease_hours: 3
-  max_pending_reviews_per_dispatcher: 1
+  max_pending_reviews_per_dispatcher: 2
   worker_retry_budget: 3
 
 github:
@@ -84,4 +84,5 @@ scheduler_bootstrap:
       gemini-spark: 22
 
 projects:
+  - maestaris
   - example-project
