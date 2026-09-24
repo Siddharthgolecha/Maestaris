@@ -1,5 +1,9 @@
 <p align="center">
-  <img src="assets/maestaris-logo.png" alt="Maestaris" width="560">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/maestaris-logo-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="assets/maestaris-logo-light.png">
+    <img src="assets/maestaris-logo-light.png" alt="Maestaris" width="460">
+  </picture>
 </p>
 
 <p align="center">
@@ -11,8 +15,7 @@
   <a href="https://github.com/Siddharthgolecha/Maestaris/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/Siddharthgolecha/Maestaris?style=flat-square"></a>
   <img alt="Python" src="https://img.shields.io/badge/python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white">
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/Siddharthgolecha/Maestaris?style=flat-square"></a>
-  <a href="https://github.com/Siddharthgolecha/Maestaris/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/Siddharthgolecha/Maestaris?style=flat-square"></a>
-  <img alt="GitHub-native" src="https://img.shields.io/badge/orchestration-GitHub--native-181717?style=flat-square&logo=github">
+  <a href="docs/github-native.md"><img alt="GitHub-native" src="https://img.shields.io/badge/GitHub-native-181717?style=flat-square&logo=github"></a>
 </p>
 
 Maestaris is a lightweight orchestration protocol for running **long-lived projects with ordinary web-hosted LLM conversations**. Model sessions can act as orchestrators or specialist workers while GitHub provides the durable coordination layer.
