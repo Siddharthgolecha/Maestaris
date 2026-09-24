@@ -34,6 +34,22 @@ class DispatcherBackpressureTests(unittest.TestCase):
         self.assertEqual(decision["reason"], "pending-review-limit")
         self.assertEqual(decision["pending"], ("A", "B"))
 
+    def test_blocked_does_not_consume_review_backpressure(self):
+        histories = {"A": [worker("BLOCKED")]}
+        decision = dispatcher_admission(histories, "D", 1)
+        self.assertTrue(decision["allow_new"])
+        self.assertEqual(decision["pending"], ())
+        self.assertEqual(decision["reason"], "capacity-available")
+
+    def test_blocked_ends_revise_resumption_and_releases_dispatcher(self):
+        histories = {
+            "A": [worker("NEEDS_REVIEW"), review("REVISE"), worker("ACK"), worker("BLOCKED")]
+        }
+        decision = dispatcher_admission(histories, "D", 1)
+        self.assertTrue(decision["allow_new"])
+        self.assertIsNone(decision["resume"])
+        self.assertEqual(decision["pending"], ())
+
     def test_revise_routes_dispatcher_back_to_same_task(self):
         decision = dispatcher_admission({"A": [worker("NEEDS_REVIEW"), review("REVISE")]}, "D", 1)
         self.assertFalse(decision["allow_new"])
