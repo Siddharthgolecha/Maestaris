@@ -1,4 +1,4 @@
-name: Validate and Sync Zerion GitHub Protocol
+name: Validate and Sync Maestaris GitHub Protocol
 
 on:
   issues:
@@ -27,5 +27,5 @@ jobs:
         run: python scripts/sync_project_fields.py
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ZERION_PROJECT_ID: ${{ vars.ZERION_PROJECT_ID }}
-          ZERION_PROJECT_TOKEN: ${{ secrets.ZERION_PROJECT_TOKEN }}
+          MAESTARIS_PROJECT_ID: ${{ vars.MAESTARIS_PROJECT_ID }}
+          MAESTARIS_PROJECT_TOKEN: ${{ secrets.MAESTARIS_PROJECT_TOKEN }}

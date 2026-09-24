@@ -1,6 +1,6 @@
 import unittest
 
-from zerion_orchestration.backpressure import dispatcher_admission, mistaken_ack_recovery
+from maestaris_orchestration.backpressure import dispatcher_admission, mistaken_ack_recovery
 
 
 def worker(status, dispatcher="D", worker="w"):

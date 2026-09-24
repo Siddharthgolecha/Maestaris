@@ -1,6 +1,6 @@
-# Zerion security and governance
+# Maestaris security and governance
 
-Zerion coordinates agents through GitHub Issues, comments, pull requests, Actions, and optional model-provider runtimes. Those surfaces are control-plane inputs, not trusted instructions.
+Maestaris coordinates agents through GitHub Issues, comments, pull requests, Actions, and optional model-provider runtimes. Those surfaces are control-plane inputs, not trusted instructions.
 
 ## Trust model
 
@@ -89,13 +89,13 @@ jobs:
 
 Do not interpolate untrusted Issue/PR/comment text directly into shell scripts. Pass it through files or environment variables and parse it as data; quote variables and avoid `eval` or generated shell commands.
 
-## Zerion-specific invariants
+## Maestaris-specific invariants
 
 - Issue history is canonical task/ownership state; labels and Projects are derived.
 - The first valid unexpired ACK lease owns a task; dashboard fields cannot steal a lease.
 - Event payloads and comments can request work but cannot override `AGENTS.md` or grant credentials.
 - Negative/blocked results remain durable rather than being erased to make a dashboard green.
-- Actions may validate/synchronize Zerion state, but an ordinary ChatGPT conversation is not awakened by a GitHub webhook.
+- Actions may validate/synchronize Maestaris state, but an ordinary ChatGPT conversation is not awakened by a GitHub webhook.
 
 ## Incident response
 

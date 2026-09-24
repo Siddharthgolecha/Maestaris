@@ -1,6 +1,6 @@
 # Evidence discipline
 
-Zerion coordinates work. Coordination is not evidence.
+Maestaris coordinates work. Coordination is not evidence.
 
 This optional layer is adapted from practices that proved useful in the
 `Siddharthgolecha/research-workbench` repository:
@@ -74,7 +74,7 @@ classes are useful defaults:
   independently reverified in the canonical repository.
 
 These names originate in the research-workbench discipline. They are examples, not
-a universal ontology for every Zerion project.
+a universal ontology for every Maestaris project.
 
 ## 4. Preserve negative results
 
@@ -144,9 +144,9 @@ project/
   results/
 ```
 
-Zerion provides templates under `coordination/templates/`.
+Maestaris provides templates under `coordination/templates/`.
 
-These files are project-domain state, not Zerion's live orchestration state.
+These files are project-domain state, not Maestaris's live orchestration state.
 
 ## 8. Blind or preregistered work
 
@@ -161,13 +161,13 @@ For blind/preregistered workflows:
 
 ## 9. Auditing
 
-A Zerion auditor should distinguish:
+A Maestaris auditor should distinguish:
 
 - **workflow consistency** — Issue/ACK/PR/review state;
 - **evidence consistency** — whether the claimed status is actually supported by the
   referenced durable evidence.
 
-An ACCEPTED Zerion task can legitimately conclude:
+An ACCEPTED Maestaris task can legitimately conclude:
 
 > The experiment ran correctly and falsified the tested claim.
 
@@ -181,4 +181,4 @@ A simple software project may need only Issues, PRs, tests, and release notes.
 
 A research program may need the full work-index/evidence-ledger/provenance structure.
 
-Zerion should coordinate both without confusing workflow completion with truth.
+Maestaris should coordinate both without confusing workflow completion with truth.

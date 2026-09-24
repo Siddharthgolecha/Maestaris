@@ -4,7 +4,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from zerion_orchestration.provenance import validate_provenance
+from maestaris_orchestration.provenance import validate_provenance
 
 
 class ProvenanceTests(unittest.TestCase):

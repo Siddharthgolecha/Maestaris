@@ -10,10 +10,10 @@ from urllib import error, parse, request
 import yaml
 
 RUNTIME_ROOT = Path(__file__).resolve().parents[1]
-PROJECT_ROOT = Path(os.environ.get("ZERION_PROJECT_ROOT", str(RUNTIME_ROOT))).resolve()
+PROJECT_ROOT = Path(os.environ.get("MAESTARIS_PROJECT_ROOT", str(RUNTIME_ROOT))).resolve()
 sys.path.insert(0, str(RUNTIME_ROOT))
 
-from zerion_orchestration.protocol import (
+from maestaris_orchestration.protocol import (
     desired_managed_labels,
     is_managed_label,
 )
@@ -50,7 +50,7 @@ class GitHubAPI:
                 "Accept": "application/vnd.github+json",
                 "Authorization": f"Bearer {self.token}",
                 "X-GitHub-Api-Version": "2022-11-28",
-                "User-Agent": "zerion-orchestration",
+                "User-Agent": "maestaris-orchestration",
                 "Content-Type": "application/json",
             },
         )
@@ -134,13 +134,13 @@ def main() -> int:
     body = issue.get("body") or ""
 
     registry = yaml.safe_load(
-        (PROJECT_ROOT / "coordination" / "zerion.yaml").read_text()
+        (PROJECT_ROOT / "coordination" / "maestaris.yaml").read_text()
     )
     github = registry["github"]
     prefix = str(github["task_title_prefix"])
 
     if not title.startswith(prefix):
-        print("Not a Zerion task Issue; skipping sync.")
+        print("Not a Maestaris task Issue; skipping sync.")
         return 0
 
     number = int(issue["number"])
@@ -165,7 +165,7 @@ def main() -> int:
         {"labels": sorted(final_labels)},
     )
 
-    print("Zerion labels synchronized: " + ", ".join(sorted(desired)))
+    print("Maestaris labels synchronized: " + ", ".join(sorted(desired)))
     return 0
 
 

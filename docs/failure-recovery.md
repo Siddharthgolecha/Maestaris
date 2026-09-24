@@ -2,7 +2,7 @@
 
 ## Chat loses context
 
-Read `AGENTS.md`, static project/agent config, then search open Zerion task Issues and reconstruct state from comments.
+Read `AGENTS.md`, static project/agent config, then search open Maestaris task Issues and reconstruct state from comments.
 
 ## Labels disagree with comments
 
@@ -30,7 +30,7 @@ The orchestrator reviews the durable evidence and records ACCEPTED, REVISE, or R
 
 ## PR exists but is not linked to a task
 
-Treat it as an audit problem. Link it to the correct Issue before relying on it as Zerion work.
+Treat it as an audit problem. Link it to the correct Issue before relying on it as Maestaris work.
 
 ## GitHub event fired but ChatGPT did nothing
 

@@ -1,6 +1,6 @@
 # Suggested Issue title
 
-`[Zerion task] <short bounded objective>`
+`[Maestaris task] <short bounded objective>`
 
 # Issue body
 

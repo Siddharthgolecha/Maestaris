@@ -1,10 +1,10 @@
 # GitHub-native integration
 
-Zerion uses GitHub as the live coordination substrate. The design rule is **native first, portable fallback second**: use a first-class GitHub primitive when it is available to every relevant runtime, but keep enough portable Issue protocol data to reconstruct work when a connector does not expose that primitive.
+Maestaris uses GitHub as the live coordination substrate. The design rule is **native first, portable fallback second**: use a first-class GitHub primitive when it is available to every relevant runtime, but keep enough portable Issue protocol data to reconstruct work when a connector does not expose that primitive.
 
 ## Core vs optional primitives
 
-| Concern | Preferred GitHub primitive | Zerion requirement |
+| Concern | Preferred GitHub primitive | Maestaris requirement |
 | --- | --- | --- |
 | bounded work | Issue | core |
 | queue/ownership state | Issue history + ACK lease | core |
@@ -31,18 +31,18 @@ Do not duplicate information GitHub already records reliably. In particular, lin
 
 When the connected runtime exposes them reliably, prefer native sub-issues for task decomposition and native blocked-by/blocking relationships for scheduling. They give humans and GitHub tooling a navigable graph without inventing another graph store.
 
-Zerion must still tolerate runtimes that cannot read or mutate these APIs. Stable `task_id` values and `depends_on` metadata are the portable fallback. Native relationships mirror that portable intent; they do not replace it as the reconstructible protocol.
+Maestaris must still tolerate runtimes that cannot read or mutate these APIs. Stable `task_id` values and `depends_on` metadata are the portable fallback. Native relationships mirror that portable intent; they do not replace it as the reconstructible protocol.
 
 ### Mapping
 
-| Zerion intent | Portable representation | Native mirror when available |
+| Maestaris intent | Portable representation | Native mirror when available |
 | --- | --- | --- |
 | stable identity | `task_id: child-001` | Issue number/URL is navigation only |
 | decomposition | child task has its own `task_id`; parent identity remains durable in task text when needed | parent/sub-issue relationship |
 | prerequisite | `depends_on: [parent-001]` | child is blocked by the prerequisite Issue; prerequisite blocks child |
 | no prerequisite | `depends_on: []` | no blocked-by edge |
 
-A dependency edge is directional: if task B lists task A in `depends_on`, B is **blocked by A**, and A is **blocking B**. The dependency is satisfied only when the prerequisite has a terminal accepted outcome according to the Zerion Issue history; merely closing the GitHub Issue is not enough if the protocol history says REJECTED, REVISE, or otherwise unresolved.
+A dependency edge is directional: if task B lists task A in `depends_on`, B is **blocked by A**, and A is **blocking B**. The dependency is satisfied only when the prerequisite has a terminal accepted outcome according to the Maestaris Issue history; merely closing the GitHub Issue is not enough if the protocol history says REJECTED, REVISE, or otherwise unresolved.
 
 Sub-issues express decomposition, not automatically execution ordering. A child being a sub-issue of a parent does not imply that either blocks the other. Add a dependency only when there is a real prerequisite.
 
@@ -52,14 +52,14 @@ Treat hierarchy and dependency support as separate capabilities. A runtime may b
 
 Before relying on a native relationship, verify that the current connector/API can read the relevant endpoint. Before mutating one, verify that the runtime exposes a supported write operation. Do not infer write support from successful reads.
 
-The GitHub connector used by Zerion's ordinary chat runtime can currently read repository issue `sub_issues` and `dependencies/blocked_by` endpoints. Its exposed mutation surface does not provide corresponding relationship writes. In that environment workers therefore **read native relationships as validation/navigation evidence but keep `depends_on` as the scheduling source available to all workers**. A different runtime with reliable relationship-write support may mirror the portable metadata natively.
+The GitHub connector used by Maestaris's ordinary chat runtime can currently read repository issue `sub_issues` and `dependencies/blocked_by` endpoints. Its exposed mutation surface does not provide corresponding relationship writes. In that environment workers therefore **read native relationships as validation/navigation evidence but keep `depends_on` as the scheduling source available to all workers**. A different runtime with reliable relationship-write support may mirror the portable metadata natively.
 
 ### Reconciliation and fallback
 
 For every candidate task:
 
 1. parse `task_id` and `depends_on` from the Issue assignment;
-2. resolve each portable dependency to its Zerion task Issue;
+2. resolve each portable dependency to its Maestaris task Issue;
 3. if native dependency reads are available, inspect the native blocked-by edges;
 4. if both representations agree, use the graph normally;
 5. if portable metadata contains an unresolved prerequisite but the native edge is missing, **remain blocked according to portable metadata** and optionally repair the native mirror when write support exists;
@@ -98,16 +98,16 @@ When a worker runtime cannot reproduce a required toolchain locally, a durable G
 
 ## Labels and search
 
-Zerion derives managed labels from the Issue history. By default:
+Maestaris derives managed labels from the Issue history. By default:
 
-- `zerion:task`
-- `zerion:ready`
-- `zerion:claimed`
-- `zerion:blocked`
-- `zerion:needs-review`
-- `zerion:accepted`
-- `zerion:revise`
-- `zerion:rejected`
+- `maestaris:task`
+- `maestaris:ready`
+- `maestaris:claimed`
+- `maestaris:blocked`
+- `maestaris:needs-review`
+- `maestaris:accepted`
+- `maestaris:revise`
+- `maestaris:rejected`
 - `priority:<value>`
 
 Unmanaged user labels are preserved. Labels are discovery/indexing hints, not stronger evidence than the Issue event history. Worker pools should use GitHub search to find eligible READY work and then inspect the Issue before claiming it.
@@ -116,7 +116,7 @@ Unmanaged user labels are preserved. Labels are discovery/indexing hints, not st
 
 APPROVE may mirror ACCEPTED and REQUEST_CHANGES may mirror REVISE.
 
-GitHub prevents a PR author from approving their own PR. Same-identity setups should use COMMENT or skip native review; the Issue-side Zerion review remains canonical.
+GitHub prevents a PR author from approving their own PR. Same-identity setups should use COMMENT or skip native review; the Issue-side Maestaris review remains canonical.
 
 ## Projects and structured fields
 
@@ -126,7 +126,7 @@ For organization-owned repositories where GitHub Issue Fields are available, fie
 
 ## Rulesets and repository policy
 
-Rulesets and required checks are the native place for enforceable repository governance. Zerion should document or recommend them rather than emulate branch protection in protocol comments.
+Rulesets and required checks are the native place for enforceable repository governance. Maestaris should document or recommend them rather than emulate branch protection in protocol comments.
 
 Rulesets are repository policy, not task state. Their availability and enforcement depend on repository/account capabilities, so the template must not assume that every derived repository can create the same ruleset.
 
@@ -144,4 +144,4 @@ Repository manifests remain useful only for semantics GitHub cannot express well
 
 ## Connected AI runtimes
 
-An AI runtime may have GitHub connector/API access while its shell cannot reach github.com. Zerion therefore makes shell `git`/`gh` optional for agent operation and capability-detects native features rather than assuming one access path.
+An AI runtime may have GitHub connector/API access while its shell cannot reach github.com. Maestaris therefore makes shell `git`/`gh` optional for agent operation and capability-detects native features rather than assuming one access path.

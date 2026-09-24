@@ -1,6 +1,6 @@
 # Multi-AI orchestration
 
-Zerion does not require every scheduled worker to run on the same model provider.
+Maestaris does not require every scheduled worker to run on the same model provider.
 
 A ChatGPT schedule, Gemini Spark schedule, Claude/Actions worker, local CLI agent, or
 future runtime can all compete safely for the same READY queue as long as they follow
@@ -39,7 +39,7 @@ claimed_at: 2026-09-22T19:30:00Z
 lease_hours: 3
 ```
 
-Existing Zerion workers that omit `runtime` or `instance` remain valid.
+Existing Maestaris workers that omit `runtime` or `instance` remain valid.
 
 ## Collision handling
 
@@ -103,15 +103,15 @@ create missing schedules, update drifted ones, and avoid duplicates by using sta
 instance names. A one-shot bootstrap chat is not enough for unattended operation
 because terminal worker results still require independent recurring review.
 
-For the default Zerion topology:
+For the default Maestaris topology:
 
 ```text
 pools: A, B
 
 Gemini Spark bootstrap session
-  -> ensures zerion-gemini-spark-orchestrator exists and recurs
-  -> ensures zerion-gemini-spark-pool-A exists
-  -> ensures zerion-gemini-spark-pool-B exists
+  -> ensures maestaris-gemini-spark-orchestrator exists and recurs
+  -> ensures maestaris-gemini-spark-pool-A exists
+  -> ensures maestaris-gemini-spark-pool-B exists
   -> keeps all three hourly and staggered
 ```
 
@@ -122,9 +122,9 @@ connect GitHub to provider
       |
 user creates ONE provider orchestrator
       |
-prompt: "Use Zerion on OWNER/REPO as orchestrator."
+prompt: "Use Maestaris on OWNER/REPO as orchestrator."
       |
-      +--> orchestrator reads AGENTS.md + coordination/zerion.yaml
+      +--> orchestrator reads AGENTS.md + coordination/maestaris.yaml
       +--> discovers pools / cadence / identities / protocol
       +--> creates or reconciles a recurring orchestrator schedule
       +--> creates or reconciles provider-owned worker schedules
@@ -142,29 +142,29 @@ provider runtime objects. GitHub records the desired topology and all durable wo
 Start one Gemini Spark task with instructions like:
 
 ```text
-Act as the Zerion orchestrator for OWNER/REPO.
+Act as the Maestaris orchestrator for OWNER/REPO.
 
-Read AGENTS.md and coordination/zerion.yaml first. Treat GitHub as the durable system
+Read AGENTS.md and coordination/maestaris.yaml first. Treat GitHub as the durable system
 of record.
 
 On startup, inspect scheduler_bootstrap and the configured pools. Because Gemini Spark
 supports conversational schedule management, ensure there is one recurring Spark
 orchestrator schedule plus one recurring worker-dispatcher schedule for every configured
-Zerion pool. If this task is already the recurring orchestrator schedule, do not create
+Maestaris pool. If this task is already the recurring orchestrator schedule, do not create
 a duplicate.
 
 Use stable schedule/instance names from the configured templates. For the default
 configuration create/reconcile:
-- zerion-gemini-spark-orchestrator, hourly, using the configured orchestrator minute;
-- zerion-gemini-spark-pool-A, hourly, using the configured Pool A minute hint;
-- zerion-gemini-spark-pool-B, hourly, using the configured Pool B minute hint.
+- maestaris-gemini-spark-orchestrator, hourly, using the configured orchestrator minute;
+- maestaris-gemini-spark-pool-A, hourly, using the configured Pool A minute hint;
+- maestaris-gemini-spark-pool-B, hourly, using the configured Pool B minute hint.
 
 Do not create duplicates. If a matching schedule exists, inspect and update it instead.
 Each generated worker schedule must read AGENTS.md on every run, poll the shared READY
 queue, respect dependencies and unexpired ACK leases, claim at most one task, and use
 its stable dispatcher/runtime/instance identity in the ACK.
 
-After reconciling worker schedules, perform the normal Zerion orchestrator duties:
+After reconciling worker schedules, perform the normal Maestaris orchestrator duties:
 review unreviewed terminal results, inspect actual PR/check/artifact evidence, post
 ACCEPTED/REVISE/REJECTED, merge only when warranted, and create bounded READY work
 only when useful.
@@ -183,14 +183,14 @@ Normally the Gemini orchestrator creates these schedules. The generated Pool A/B
 schedule should use a prompt equivalent to:
 
 ```text
-Act as Zerion worker dispatcher Pool A for OWNER/REPO.
+Act as Maestaris worker dispatcher Pool A for OWNER/REPO.
 
-Read AGENTS.md and the current Zerion configuration first. Search open zerion:task
+Read AGENTS.md and the current Maestaris configuration first. Search open maestaris:task
 Issues and select the highest-priority eligible READY task for this pool. Read the
 Issue history before claiming anything. If another dispatcher owns an unexpired ACK,
 skip it.
 
-When claiming a task, post a normal Zerion ACK and identify this scheduler as:
+When claiming a task, post a normal Maestaris ACK and identify this scheduler as:
 
 dispatcher: gemini-spark-pool-a
 runtime: gemini-spark
@@ -202,7 +202,7 @@ evidence. If no eligible task exists, do nothing.
 ```
 
 Gemini Spark supports scheduled tasks directly in its UI. The GitHub/MCP connection is
-only the tool transport; Zerion's Issue protocol remains the coordination layer.
+only the tool transport; Maestaris's Issue protocol remains the coordination layer.
 
 Official Spark schedule documentation:
 https://support.google.com/gemini/answer/17094710

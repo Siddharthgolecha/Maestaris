@@ -3,14 +3,14 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "zerion-orchestration"
+name = "maestaris-orchestration"
 version = "0.6.2"
-description = "GitHub-native orchestration protocol for persistent ChatGPT workers"
+description = "GitHub-native orchestration protocol for persistent web-hosted LLM workers"
 requires-python = ">=3.10"
 dependencies = ["PyYAML>=6.0"]
 
 [project.scripts]
-zerion = "zerion_orchestration.cli:main"
+maestaris = "maestaris_orchestration.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["zerion_orchestration*"]
+include = ["maestaris_orchestration*"]

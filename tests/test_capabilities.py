@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from zerion_orchestration.capabilities import (
+from maestaris_orchestration.capabilities import (
     capability_decision,
     list_field,
     select_capability_eligible,

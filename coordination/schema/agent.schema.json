@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Zerion Agent",
+  "title": "Maestaris Agent",
   "type": "object",
   "required": ["schema", "agent", "project", "role", "dispatcher_pool", "status"],
   "properties": {

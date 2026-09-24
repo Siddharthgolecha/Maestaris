@@ -1,6 +1,6 @@
 # Multi-orchestrator review leases
 
-When more than one orchestrator runtime polls the same Zerion repository, review ownership is coordinated through the task Issue history.
+When more than one orchestrator runtime polls the same Maestaris repository, review ownership is coordinated through the task Issue history.
 
 Before substantive review of an unreviewed terminal worker result, an orchestrator posts:
 

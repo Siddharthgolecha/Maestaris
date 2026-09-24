@@ -29,4 +29,4 @@ Record:
 - scope/domain of the result;
 - negative or conflicting evidence.
 
-Never promote a claim solely because a Zerion task was marked DONE or ACCEPTED.
+Never promote a claim solely because a Maestaris task was marked DONE or ACCEPTED.

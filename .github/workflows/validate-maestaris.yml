@@ -1,4 +1,4 @@
-name: Validate Zerion
+name: Validate Maestaris
 
 on:
   push:
@@ -17,6 +17,6 @@ jobs:
         with:
           python-version: '3.12'
       - run: python -m pip install -e .
-      - run: zerion validate
+      - run: maestaris validate
       - run: python scripts/check_release_version.py
       - run: python -m unittest discover -s tests -v

@@ -1,4 +1,4 @@
-# Zerion coordination configuration
+# Maestaris coordination configuration
 
 This directory contains **stable configuration only**.
 
@@ -6,7 +6,7 @@ Live task state belongs in GitHub Issues, comments, PRs, checks, and artifacts.
 
 ## Files
 
-- `zerion.yaml` — global protocol, GitHub label policy, pools, and registered projects.
+- `maestaris.yaml` — global protocol, GitHub label policy, pools, and registered projects.
 - `projects/` — project membership, canonical paths, and worker lists.
 - `agents/` — worker identities, roles, pool ownership, and relevant paths.
 - `templates/` — reusable Issue/comment/project/agent templates.
@@ -25,7 +25,7 @@ Those concepts duplicated GitHub's own state.
 
 ## Live control plane
 
-A Zerion task is a GitHub Issue.
+A Maestaris task is a GitHub Issue.
 
 Its body publishes READY work. Comments record the ACK that establishes worker ownership, terminal results, and orchestrator reviews.
 

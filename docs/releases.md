@@ -1,6 +1,6 @@
 # Releases and versioning
 
-Zerion uses semantic versions for published protocol/tooling boundaries.
+Maestaris uses semantic versions for published protocol/tooling boundaries.
 
 The package version in `pyproject.toml` is the source of the release tag:
 
@@ -10,7 +10,7 @@ The package version in `pyproject.toml` is the source of the release tag:
 
 ## Release policy
 
-A release is created only after the `Validate Zerion` workflow succeeds on `main`.
+A release is created only after the `Validate Maestaris` workflow succeeds on `main`.
 
 The release workflow then:
 
@@ -28,7 +28,7 @@ This makes a version bump an explicit publication decision.
 - minor: backwards-compatible protocol/features;
 - major: intentionally incompatible protocol contract.
 
-During early development Zerion may make larger changes under 0.x, but the release
+During early development Maestaris may make larger changes under 0.x, but the release
 still marks a durable recovery point.
 
 ## Immutable releases and attestations

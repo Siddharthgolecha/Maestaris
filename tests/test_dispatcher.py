@@ -1,4 +1,4 @@
-from zerion_orchestration.dispatcher import dispatcher_selection
+from maestaris_orchestration.dispatcher import dispatcher_selection
 
 
 def task(task_id, priority="P1", group="", resources=None, age=0):

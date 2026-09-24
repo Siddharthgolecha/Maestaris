@@ -1,10 +1,10 @@
-name: Reusable Zerion Protocol
+name: Reusable Maestaris Protocol
 
 on:
   workflow_call:
     inputs:
-      zerion_ref:
-        description: Zerion tag, branch, or commit used as the runtime implementation
+      maestaris_ref:
+        description: Maestaris tag, branch, or commit used as the runtime implementation
         required: false
         type: string
         default: main
@@ -29,38 +29,38 @@ jobs:
       - name: Check out consumer repository
         uses: actions/checkout@v4
 
-      - name: Check out Zerion runtime
+      - name: Check out Maestaris runtime
         uses: actions/checkout@v4
         with:
-          repository: Siddharthgolecha/Zerion
-          ref: ${{ inputs.zerion_ref }}
-          path: .zerion-runtime
+          repository: Siddharthgolecha/Maestaris
+          ref: ${{ inputs.maestaris_ref }}
+          path: .maestaris-runtime
 
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
-      - name: Install Zerion runtime
-        run: python -m pip install -e .zerion-runtime
+      - name: Install Maestaris runtime
+        run: python -m pip install -e .maestaris-runtime
 
       - name: Validate consumer repository
-        run: zerion --root "$GITHUB_WORKSPACE" validate
+        run: maestaris --root "$GITHUB_WORKSPACE" validate
 
       - name: Validate protocol event
-        run: python .zerion-runtime/scripts/validate_github_event.py
+        run: python .maestaris-runtime/scripts/validate_github_event.py
         env:
-          ZERION_PROJECT_ROOT: ${{ github.workspace }}
+          MAESTARIS_PROJECT_ROOT: ${{ github.workspace }}
 
       - name: Synchronize derived Issue labels
-        run: python .zerion-runtime/scripts/sync_github_issue.py
+        run: python .maestaris-runtime/scripts/sync_github_issue.py
         env:
-          ZERION_PROJECT_ROOT: ${{ github.workspace }}
+          MAESTARIS_PROJECT_ROOT: ${{ github.workspace }}
           GITHUB_TOKEN: ${{ github.token }}
 
       - name: Synchronize optional Project fields
-        run: python .zerion-runtime/scripts/sync_project_fields.py
+        run: python .maestaris-runtime/scripts/sync_project_fields.py
         env:
-          ZERION_PROJECT_ROOT: ${{ github.workspace }}
+          MAESTARIS_PROJECT_ROOT: ${{ github.workspace }}
           GITHUB_TOKEN: ${{ github.token }}
-          ZERION_PROJECT_ID: ${{ inputs.project_id }}
-          ZERION_PROJECT_TOKEN: ${{ secrets.project_token }}
+          MAESTARIS_PROJECT_ID: ${{ inputs.project_id }}
+          MAESTARIS_PROJECT_TOKEN: ${{ secrets.project_token }}

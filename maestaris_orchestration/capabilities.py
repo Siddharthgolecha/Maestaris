@@ -13,7 +13,7 @@ def _normalize(values: Iterable[str]) -> frozenset[str]:
 
 
 def list_field(body: str, name: str) -> tuple[str, ...]:
-    """Parse a small YAML-like scalar/list field from a Zerion protocol record.
+    """Parse a small YAML-like scalar/list field from a Maestaris protocol record.
 
     Supports `requires: [python, web]`, `requires: python`, and the ordinary
     indented list form. It deliberately does not parse arbitrary YAML: Issue

@@ -1,8 +1,8 @@
-# Zerion operating model
+# Maestaris operating model
 
 ## The two worlds
 
-Zerion deliberately separates **reasoning runtime** from **durable coordination**.
+Maestaris deliberately separates **reasoning runtime** from **durable coordination**.
 
 ```text
 ChatGPT
@@ -21,9 +21,9 @@ GitHub can immediately trigger Actions when an Issue or comment changes, but a n
 
 ## Invariants vs implementation freedom
 
-Zerion standardizes **invariants and hand-off semantics**, not the final shape of every repository.
+Maestaris standardizes **invariants and hand-off semantics**, not the final shape of every repository.
 
-The template is a starting point. An agent operating a derived repository may replace Zerion defaults with stronger project-specific or GitHub-native structures when useful.
+The template is a starting point. An agent operating a derived repository may replace Maestaris defaults with stronger project-specific or GitHub-native structures when useful.
 
 For example, a personal repository might use labels plus a Project view, while an organization repository might use native Issue Types and Issue Fields. A research repository may add an evidence ledger and immutable release provenance; a software repository may rely mostly on Issues, PRs, checks, releases, and rulesets.
 
@@ -33,7 +33,7 @@ The durable requirements are reconstructibility, idempotency, evidence integrity
 
 ## Static repository configuration
 
-`AGENTS.md`, `coordination/zerion.yaml`, project YAML, and agent YAML describe how the system is organized.
+`AGENTS.md`, `coordination/maestaris.yaml`, project YAML, and agent YAML describe how the system is organized.
 
 They change when the architecture of the project changes, not every time a task changes state.
 
@@ -80,12 +80,12 @@ GitHub Projects is a derived mission board.
 The recommended auto-add filter is:
 
 ```text
-is:issue label:"zerion:task"
+is:issue label:"maestaris:task"
 ```
 
 Built-in Project automation can mark added items Todo and closed Issues Done.
 
-Zerion status labels provide richer views such as claimed, blocked, and needs review.
+Maestaris status labels provide richer views such as claimed, blocked, and needs review.
 
 ## Polling and idempotency
 
@@ -103,4 +103,4 @@ Safe polling requires:
 
 A worker with no useful unblocked task should remain idle/dormant.
 
-Zerion optimizes useful progress, not activity.
+Maestaris optimizes useful progress, not activity.

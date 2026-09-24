@@ -1,7 +1,7 @@
 ---
-name: Zerion task
-about: Create a bounded task in the Zerion work queue
-title: "[Zerion task] "
+name: Maestaris task
+about: Create a bounded task in the Maestaris work queue
+title: "[Maestaris task] "
 assignees: ""
 ---
 

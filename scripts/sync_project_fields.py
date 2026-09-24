@@ -10,11 +10,11 @@ from urllib import error, request
 import yaml
 
 RUNTIME_ROOT = Path(__file__).resolve().parents[1]
-PROJECT_ROOT = Path(os.environ.get("ZERION_PROJECT_ROOT", str(RUNTIME_ROOT))).resolve()
+PROJECT_ROOT = Path(os.environ.get("MAESTARIS_PROJECT_ROOT", str(RUNTIME_ROOT))).resolve()
 sys.path.insert(0, str(RUNTIME_ROOT))
 sys.path.insert(0, str(RUNTIME_ROOT / "scripts"))
 
-from zerion_orchestration.project_sync import project_field_values
+from maestaris_orchestration.project_sync import project_field_values
 
 
 GRAPHQL_URL = "https://api.github.com/graphql"
@@ -34,7 +34,7 @@ class GraphQL:
                 "Accept": "application/vnd.github+json",
                 "Authorization": f"Bearer {self.token}",
                 "X-GitHub-Api-Version": "2022-11-28",
-                "User-Agent": "zerion-orchestration",
+                "User-Agent": "maestaris-orchestration",
                 "Content-Type": "application/json",
             },
         )
@@ -151,17 +151,17 @@ def main() -> int:
         return 0
 
     registry = yaml.safe_load(
-        (PROJECT_ROOT / "coordination" / "zerion.yaml").read_text()
+        (PROJECT_ROOT / "coordination" / "maestaris.yaml").read_text()
     )
     project_cfg = ((registry.get("github") or {}).get("projects") or {})
     field_sync = project_cfg.get("field_sync") or {}
 
     if not field_sync.get("enabled"):
-        print("Zerion Project field sync is disabled.")
+        print("Maestaris Project field sync is disabled.")
         return 0
 
-    project_id_env = str(field_sync.get("project_id_env", "ZERION_PROJECT_ID"))
-    token_env = str(field_sync.get("token_env", "ZERION_PROJECT_TOKEN"))
+    project_id_env = str(field_sync.get("project_id_env", "MAESTARIS_PROJECT_ID"))
+    token_env = str(field_sync.get("token_env", "MAESTARIS_PROJECT_TOKEN"))
     project_id = os.environ.get(project_id_env)
     token = os.environ.get(token_env)
 
@@ -180,9 +180,9 @@ def main() -> int:
         return 0
 
     title = issue.get("title") or ""
-    prefix = str((registry.get("github") or {}).get("task_title_prefix", "[Zerion task]"))
+    prefix = str((registry.get("github") or {}).get("task_title_prefix", "[Maestaris task]"))
     if not title.startswith(prefix):
-        print("Not a Zerion task Issue; skipping Project sync.")
+        print("Not a Maestaris task Issue; skipping Project sync.")
         return 0
 
     repo = os.environ.get("GITHUB_REPOSITORY")
@@ -221,7 +221,7 @@ def main() -> int:
             continue
         update_field(api, project_id, item_id, field, value)
 
-    print("Zerion Project fields synchronized where configured.")
+    print("Maestaris Project fields synchronized where configured.")
     return 0
 
 

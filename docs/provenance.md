@@ -1,6 +1,6 @@
 # Native-first provenance bundles
 
-Zerion treats provenance as evidence, not as a second mutable state machine. Prefer GitHub-native immutable or durable objects wherever they already express the required fact.
+Maestaris treats provenance as evidence, not as a second mutable state machine. Prefer GitHub-native immutable or durable objects wherever they already express the required fact.
 
 ## Native mapping
 
@@ -11,7 +11,7 @@ Zerion treats provenance as evidence, not as a second mutable state machine. Pre
 | build/test output | Actions run, check, and retained workflow artifact |
 | build provenance | GitHub artifact attestation when supported |
 | release integrity | immutable release settings when available, plus asset digests |
-| task/review history | Zerion Issue protocol and linked PR |
+| task/review history | Maestaris Issue protocol and linked PR |
 
 A repository manifest is justified only for semantics GitHub does not represent well: raw-vs-derived classification, exact reproduce commands, domain assumptions, blind-analysis constraints, recovery notes, and relationships among externally produced artifacts.
 
@@ -46,7 +46,7 @@ A release or experiment may include a `PROVENANCE.json` beside its artifacts. It
 5. Validate all declared files and hashes before publishing.
 6. Upload the validated bundle as release assets or Actions artifacts as appropriate.
 7. Generate artifact attestations when the repository/runtime supports them.
-8. Link the Release/run/attestation from the relevant Zerion task Issue so a fresh agent can reconstruct the evidence chain.
+8. Link the Release/run/attestation from the relevant Maestaris task Issue so a fresh agent can reconstruct the evidence chain.
 
 ## Recovery semantics
 

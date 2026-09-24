@@ -1,6 +1,6 @@
 # Capability-aware routing
 
-Zerion tasks may optionally declare hard capabilities and soft preferences without tying work to a model provider.
+Maestaris tasks may optionally declare hard capabilities and soft preferences without tying work to a model provider.
 
 ```yaml
 requires:
@@ -44,4 +44,4 @@ requires: [web]
 requires: [schedule-management, github-write]
 ```
 
-The reference helper in `zerion_orchestration.capabilities` implements the portable matching rule. It intentionally parses only the bounded string-list fields required by this contract rather than treating arbitrary Issue Markdown as trusted YAML.
+The reference helper in `maestaris_orchestration.capabilities` implements the portable matching rule. It intentionally parses only the bounded string-list fields required by this contract rather than treating arbitrary Issue Markdown as trusted YAML.

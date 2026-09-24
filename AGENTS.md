@@ -1,17 +1,17 @@
-# Zerion agent operating instructions
+# Maestaris agent operating instructions
 
-This repository uses Zerion's GitHub-native orchestration protocol.
+This repository uses Maestaris's GitHub-native orchestration protocol.
 
 **Core rule:** chats reason; GitHub remembers.
 
-A fresh AI session must be able to reconstruct its role and current work from this repository plus GitHub Issues/PRs without relying on earlier chat history.
+A fresh LLM session must be able to reconstruct its role and current work from this repository plus GitHub Issues/PRs without relying on earlier chat history.
 
 ## What is canonical
 
 Use durable evidence in this order:
 
 1. this `AGENTS.md`;
-2. `coordination/zerion.yaml`;
+2. `coordination/maestaris.yaml`;
 3. the relevant `coordination/projects/<project>.yaml`;
 4. the relevant `coordination/agents/<worker>.yaml`;
 5. GitHub task Issues and their comments;
@@ -25,9 +25,9 @@ Labels and GitHub Projects are derived views. If a label or Project field disagr
 
 Chat memory and remembered summaries are advisory only.
 
-## Agent autonomy contract
+## Runtime autonomy contract
 
-Zerion is a **bootstrap constitution**, not a fixed application architecture.
+Maestaris is a **bootstrap constitution**, not a fixed application architecture.
 
 Once this repository is created from the template, optimize it for the actual project rather than preserving template shape for its own sake.
 
@@ -42,23 +42,23 @@ Examples include:
 - adding repository rulesets, required checks, branch conventions, and review structure;
 - creating releases, artifacts, attestations, provenance structures, and evidence layouts;
 - refactoring repository directories, prompts, templates, and project-specific `AGENTS.md` files;
-- retiring Zerion defaults that are redundant once a stronger native project-specific mechanism exists.
+- retiring Maestaris defaults that are redundant once a stronger native project-specific mechanism exists.
 
-Before choosing a structure, inspect the capabilities actually available to this repository/account/runtime. Prefer the strongest GitHub-native primitive that fits the project. Fall back to portable Zerion conventions only when the native feature is unavailable or would harm reconstructibility.
+Before choosing a structure, inspect the capabilities actually available to this repository/account/runtime. Prefer the strongest GitHub-native primitive that fits the project. Fall back to portable Maestaris conventions only when the native feature is unavailable or would harm reconstructibility.
 
-Do **not** preserve compatibility with the original Zerion template merely for compatibility's sake unless the user explicitly wants to track upstream Zerion.
+Do **not** preserve compatibility with the original Maestaris template merely for compatibility's sake unless the user explicitly wants to track upstream Maestaris.
 
 ### Preserve these invariants
 
 Implementation is flexible; these invariants are not:
 
-1. A fresh agent can reconstruct current work from durable repository/GitHub evidence.
+1. A fresh LLM session can reconstruct current work from durable repository/GitHub evidence.
 2. Task ownership and retries are idempotent; duplicate workers do not silently duplicate work.
 3. Substantive claims are supported by durable evidence, not chat summaries or dashboard metadata.
 4. Negative, falsifying, blocked, and inconclusive outcomes remain explicit.
 5. Destructive changes do not erase provenance required to understand prior decisions/results.
 6. Secrets and credentials are never committed or exposed.
-7. Project-specific instructions may replace Zerion defaults only when the resulting system remains understandable to a fresh worker.
+7. Project-specific instructions may replace Maestaris defaults only when the resulting system remains understandable to a fresh worker.
 
 ### Prefer action over permission
 
@@ -86,7 +86,7 @@ Actions may validate protocol records, synchronize labels, run tests, and feed d
 
 ## Multi-AI dispatchers
 
-A Zerion worker pool is a protocol role, not a model-provider identity.
+A Maestaris worker pool is a protocol role, not a model-provider identity.
 
 ChatGPT schedules, Gemini Spark schedules, Claude/Actions workers, local agents, and future runtimes may all poll the same READY queue.
 
@@ -109,7 +109,7 @@ create that external provider session/task.
 A minimal invocation such as:
 
 ```text
-Use Zerion on OWNER/REPO as orchestrator.
+Use Maestaris on OWNER/REPO as orchestrator.
 ```
 
 must be sufficient. The orchestrator reads this repository, discovers the desired
@@ -117,7 +117,7 @@ topology, and bootstraps a recurring orchestrator loop plus its own runtime's
 worker-dispatcher schedules when the current provider exposes schedule-management
 capabilities. A one-shot orchestrator is not sufficient for unattended operation.
 
-The desired topology comes from `coordination/zerion.yaml`:
+The desired topology comes from `coordination/maestaris.yaml`:
 
 - `pools` defines the worker-pool roles;
 - `scheduler_bootstrap` defines whether schedules should be created/reconciled,
@@ -132,10 +132,10 @@ On orchestrator startup:
 3. derive the desired dispatcher set from the configured pools;
 4. if schedule management is available, ensure exactly one recurring dispatcher
    schedule exists for each desired pool for this runtime;
-5. use stable identities such as `zerion-gemini-spark-orchestrator` and
-   `zerion-gemini-spark-pool-A`;
+5. use stable identities such as `maestaris-gemini-spark-orchestrator` and
+   `maestaris-gemini-spark-pool-A`;
 6. update an existing schedule rather than creating a duplicate;
-7. give every generated dispatcher the normal Zerion worker-pool instructions and a
+7. give every generated dispatcher the normal Maestaris worker-pool instructions and a
    unique `dispatcher:` / `runtime:` / `instance:` identity;
 8. re-check this topology on later orchestrator runs and repair missing/paused/drifted
    schedules when safe.
@@ -167,10 +167,10 @@ If the request is project-level coordination and no specialist identity is suppl
 
 Before substantive work:
 
-1. Read `coordination/zerion.yaml`.
+1. Read `coordination/maestaris.yaml`.
 2. Resolve the relevant project and read its project YAML.
 3. Resolve the relevant worker(s) and read their agent YAML.
-4. Search GitHub for open Issues labeled with the configured task label, normally `zerion:task`.
+4. Search GitHub for open Issues labeled with the configured task label, normally `maestaris:task`.
 5. Inspect candidate Issue bodies. The structured `project` must match. A `worker` field is optional and, when present, pins the task to that specialist.
 6. Read Issue comments chronologically.
 7. Derive live task state from the latest protocol events:
@@ -195,7 +195,7 @@ If labels lag the Issue history, trust the history.
 The orchestrator creates a GitHub Issue titled with the configured prefix, normally:
 
 ```text
-[Zerion task] <bounded objective>
+[Maestaris task] <bounded objective>
 ```
 
 The Issue body begins with `[ORCHESTRATOR:v1]` and includes a stable `task_id`, project, priority, dependencies, objective, constraints, and completion conditions.
@@ -214,7 +214,7 @@ For multi-AI deployments, use a unique dispatcher ID per scheduled runtime and o
 
 For repository-changing work:
 
-1. create a branch using the configured prefix, normally `zerion/task/<issue>-<slug>`;
+1. create a branch using the configured prefix, normally `maestaris/task/<issue>-<slug>`;
 2. open a **draft PR early**;
 3. link it to the task Issue;
 4. use a closing keyword such as `Resolves #123` when merge should complete the task.
@@ -264,19 +264,19 @@ Do not duplicate work when:
 
 GitHub Projects is a **dashboard**, not canonical state.
 
-Zerion Actions derive labels such as:
+Maestaris Actions derive labels such as:
 
-- `zerion:task`
-- `zerion:ready`
-- `zerion:claimed`
-- `zerion:blocked`
-- `zerion:needs-review`
-- `zerion:accepted`
+- `maestaris:task`
+- `maestaris:ready`
+- `maestaris:claimed`
+- `maestaris:blocked`
+- `maestaris:needs-review`
+- `maestaris:accepted`
 - `priority:P0`
 
-A Project can auto-add `zerion:task` Issues and use those labels for views. Project status/fields must never be required to reconstruct a task.
+A Project can auto-add `maestaris:task` Issues and use those labels for views. Project status/fields must never be required to reconstruct a task.
 
-When a repository configures optional Project field synchronization, Zerion may mirror derived Priority, Status, Worker, Dispatcher, and Runtime fields into the Project. The Issue body/comments remain canonical if the Project view is missing or stale.
+When a repository configures optional Project field synchronization, Maestaris may mirror derived Priority, Status, Worker, Dispatcher, and Runtime fields into the Project. The Issue body/comments remain canonical if the Project view is missing or stale.
 
 ## Blocking and dormancy
 
@@ -286,4 +286,4 @@ Dormancy is healthy. Do not invent work merely to keep workers active.
 
 ## Repository-local instructions
 
-A more specific nested `AGENTS.md` may narrow behavior for files in its scope, but must not break Zerion's durability, idempotency, or evidence requirements.
+A more specific nested `AGENTS.md` may narrow behavior for files in its scope, but must not break Maestaris's durability, idempotency, or evidence requirements.

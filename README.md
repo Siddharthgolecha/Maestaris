@@ -1,15 +1,15 @@
-# Zerion
+# Maestaris
 
-**Agents reason. GitHub remembers.**
+**Models reason. GitHub remembers. Maestaris conducts.**
 
-Zerion is a lightweight orchestration protocol for running **long-lived projects with ordinary ChatGPT conversations**.
+Maestaris is a lightweight orchestration protocol for running **long-lived projects with ordinary web-hosted LLM conversations**.
 
 It came from a practical problem: one ChatGPT chat can do serious work, but long research and engineering projects quickly outgrow one conversation. You want an orchestrator, specialist workers, parallel branches, reproducible evidence, hand-offs, and the ability to close a chat and come back later without losing the project.
 
-Zerion makes GitHub the durable coordination layer.
+Maestaris makes GitHub the durable coordination layer.
 
 ```text
-ordinary ChatGPT chats / scheduled chats
+web LLM sessions / scheduled sessions
                  |
                  | poll
                  v
@@ -32,25 +32,25 @@ ordinary ChatGPT chats / scheduled chats
 
 The invariant is simple:
 
-> **Any chat may disappear. The project must still be reconstructible from GitHub.**
+> **Any model session may disappear. The project must still be reconstructible from GitHub.**
 
-## What Zerion is meant for
+## What Maestaris is meant for
 
-Zerion is useful when you want to treat multiple normal ChatGPT conversations as persistent specialist workers:
+Maestaris is useful when you want to treat multiple normal web-hosted LLM conversations as persistent specialist workers:
 
-- one chat coordinates the project;
-- other chats specialize in theory, implementation, experiments, review, writing, or anything else;
-- scheduled ChatGPT tasks can periodically poll GitHub when you are away;
+- one model session coordinates the project;
+- other model sessions specialize in theory, implementation, experiments, review, writing, or anything else;
+- scheduled model tasks can periodically poll GitHub when you are away;
 - GitHub holds assignments, ACKs, results, evidence, reviews, branches, PRs, and provenance;
 - GitHub Projects gives you a human dashboard over the same work.
 
-The chats do the reasoning. GitHub carries the durable state.
+The models do the reasoning. GitHub carries the durable state.
 
-## Zerion is a seed, not the final repository architecture
+## Maestaris is a seed, not the final repository architecture
 
-A repository created from Zerion is expected to **evolve away from the template** when the project benefits from it.
+A repository created from Maestaris is expected to **evolve away from the template** when the project benefits from it.
 
-The agent should inspect what GitHub capabilities are available and shape the repository accordingly.
+The runtime should inspect what GitHub capabilities are available and shape the repository accordingly.
 
 For example, it may decide to:
 
@@ -65,12 +65,12 @@ For example, it may decide to:
 - add an evidence ledger for research, or skip it for a simple software project;
 - remove template mechanisms that have become redundant.
 
-The goal is **not** to keep every Zerion repository looking identical.
+The goal is **not** to keep every Maestaris repository looking identical.
 
 The goal is to preserve a few invariants:
 
 ```text
-fresh agent can recover the project
+fresh model session can recover the project
         +
 tasks are safely owned/idempotent
         +
@@ -81,13 +81,13 @@ negative/blocking results are not erased
 provenance survives agent/chat turnover
 ```
 
-For reversible low-risk choices, the agent should make a reasonable decision and continue rather than repeatedly asking the user for implementation preferences.
+For reversible low-risk choices, the runtime should make a reasonable decision and continue rather than repeatedly asking the user for implementation preferences.
 
 Human confirmation is primarily for destructive, irreversible, permission/security-sensitive, externally costly, publication/visibility-changing, or genuinely goal-ambiguous decisions.
 
-## What Zerion is not
+## What Maestaris is not
 
-Zerion is **not** primarily an API-agent framework.
+Maestaris is **not** primarily an API-agent framework.
 
 It does not require:
 
@@ -104,9 +104,9 @@ There is a small CLI for static setup and validation, but the protocol is design
 
 GitHub Issues, comments, PRs, and other events can trigger **GitHub Actions**.
 
-They cannot directly invoke an ordinary ChatGPT sidebar conversation.
+They cannot directly invoke an ordinary web-hosted LLM conversation.
 
-So Zerion deliberately separates two kinds of automation:
+So Maestaris deliberately separates two kinds of automation:
 
 ```text
 GitHub event
@@ -124,18 +124,18 @@ ChatGPT schedule / user invocation
          reports result
 ```
 
-That is why Zerion is built around **safe polling and idempotency**, not fake webhook-driven chat execution.
+That is why Maestaris is built around **safe polling and idempotency**, not fake webhook-driven chat execution.
 
 ## The current model
 
-Zerion stores stable configuration in the repository and live orchestration state in GitHub itself.
+Maestaris stores stable configuration in the repository and live orchestration state in GitHub itself.
 
 ### Stable configuration
 
 ```text
 AGENTS.md
 coordination/
-  zerion.yaml
+  maestaris.yaml
   projects/
   agents/
 prompts/
@@ -166,7 +166,7 @@ Keeping a second state machine in YAML created drift and required commits for ev
 The orchestrator opens:
 
 ```text
-[Zerion task] Prove bounded convergence result
+[Maestaris task] Prove bounded convergence result
 ```
 
 with a structured body:
@@ -205,52 +205,52 @@ If the PR contains `Resolves #42`, GitHub can close the task Issue automatically
 
 ## GitHub Actions do the mechanical work
 
-Zerion ships an Issue/comment workflow that:
+Maestaris ships an Issue/comment workflow that:
 
-1. validates structured Zerion task records;
+1. validates structured Maestaris task records;
 2. reconstructs the task's current protocol state from Issue comments;
-3. derives GitHub labels such as `zerion:ready`, `zerion:claimed`, `zerion:blocked`, or `zerion:needs-review`;
+3. derives GitHub labels such as `maestaris:ready`, `maestaris:claimed`, `maestaris:blocked`, or `maestaris:needs-review`;
 4. preserves unrelated user labels.
 
 Those labels are derived metadata. The Issue history remains authoritative.
 
 ## GitHub Projects becomes the mission board
 
-GitHub Projects fits Zerion well because it can remain a **view over Issues**, rather than another required database.
+GitHub Projects fits Maestaris well because it can remain a **view over Issues**, rather than another required database.
 
 Recommended setup:
 
-1. Create a GitHub Project for your Zerion work.
+1. Create a GitHub Project for your Maestaris work.
 2. Enable its **Auto-add to project** workflow.
 3. Point it at your repository with:
 
 ```text
-is:issue label:"zerion:task"
+is:issue label:"maestaris:task"
 ```
 
 4. Enable the built-in workflow that sets newly added items to **Todo**.
 5. Keep the built-in closed-item -> **Done** workflow enabled.
 6. Add useful views such as:
-   - Blocked: `label:zerion:blocked`
-   - Needs review: `label:zerion:needs-review`
-   - Ready: `label:zerion:ready`
-   - Claimed: `label:zerion:claimed`
+   - Blocked: `label:maestaris:blocked`
+   - Needs review: `label:maestaris:needs-review`
+   - Ready: `label:maestaris:ready`
+   - Claimed: `label:maestaris:claimed`
    - P0: `label:priority:P0`
 
 The Project is for visibility. A fresh worker must be able to reconstruct work without reading Project-specific fields.
 
-If desired, Zerion can also mirror Priority, Status, Worker, Dispatcher, and Runtime into native Project fields using an optional Project token. Labels remain the portable fallback.
+If desired, Maestaris can also mirror Priority, Status, Worker, Dispatcher, and Runtime into native Project fields using an optional Project token. Labels remain the portable fallback.
 
 See [GitHub Projects](docs/github-projects.md).
 
-## How ChatGPT workers use Zerion
+## How web-hosted LLM workers use Maestaris
 
-Every Zerion repository has a root [AGENTS.md](AGENTS.md).
+Every Maestaris repository has a root [AGENTS.md](AGENTS.md).
 
 A fresh worker starts there and learns how to:
 
 - resolve its project and role;
-- search for open Zerion task Issues;
+- search for open Maestaris task Issues;
 - derive task state from comments;
 - respect ACK leases;
 - read canonical project documents;
@@ -260,11 +260,11 @@ A fresh worker starts there and learns how to:
 
 This lets you start a completely fresh conversation and say something as small as:
 
-> Use Zerion on this repository. Act as worker pool A.
+> Use Maestaris on this repository. Act as worker pool A.
 
 or:
 
-> Use Zerion and continue orchestration for this project.
+> Use Maestaris and continue orchestration for this project.
 
 The repository should contain enough durable information for the new chat to recover.
 
@@ -291,16 +291,16 @@ A worker identity is not the same thing as a scheduler or provider. Use a unique
 
 Staggering provider schedules reduces unnecessary races while still providing failover. For example, ChatGPT and Gemini Spark can check the same pool at different points in the hour.
 
-For runtimes that support schedule management, Zerion treats the **orchestrator as
+For runtimes that support schedule management, Maestaris treats the **orchestrator as
 the bootstrap entrypoint**. The user creates one orchestrator in the provider UI and
 can give it only:
 
 ```text
-Use Zerion on OWNER/REPO as orchestrator.
+Use Maestaris on OWNER/REPO as orchestrator.
 ```
 
 The orchestrator then derives the desired worker pools from
-`coordination/zerion.yaml` and creates/reconciles its own provider-owned dispatcher
+`coordination/maestaris.yaml` and creates/reconciles its own provider-owned dispatcher
 schedules. GitHub supplies the durable desired state and instructions; GitHub itself
 does not create external ChatGPT/Gemini/Claude tasks. Gemini Spark supports conversational schedule management, so a Gemini
 orchestrator can bootstrap its Pool A/B schedules without the user manually creating
@@ -313,7 +313,7 @@ See [Multi-AI orchestration](docs/runtime/multi-ai-orchestration.md).
 ```text
 AGENTS.md
 coordination/
-  zerion.yaml
+  maestaris.yaml
   projects/
     example-project.yaml
   agents/
@@ -336,7 +336,7 @@ docs/
 
 ## Quick start
 
-Use the repository as a template or copy Zerion's coordination layer into an existing repository.
+Use the repository as a template or copy Maestaris's coordination layer into an existing repository.
 
 Optional local helper:
 
@@ -346,11 +346,11 @@ python -m pip install -e .
 # In a network-restricted environment with dependencies already installed:
 # python -m pip install --no-build-isolation -e .
 
-zerion init my-project \
+maestaris init my-project \
   --workers theory implementation audit \
   --repository owner/repository
 
-zerion validate
+maestaris validate
 ```
 
 The CLI writes only stable configuration. It does not maintain live worker state.
@@ -359,7 +359,7 @@ Then create your ChatGPT orchestrator / worker chats and point them at the repos
 
 ## Why not store live task state in YAML?
 
-Earlier Zerion versions maintained a state index in the repository.
+Earlier Maestaris versions maintained a state index in the repository.
 
 Dogfooding showed that this created the wrong abstraction:
 
@@ -369,7 +369,7 @@ Dogfooding showed that this created the wrong abstraction:
 - parallel workers could contend on state files;
 - AI runtimes with GitHub connector access may not have shell GitHub access.
 
-Zerion therefore makes GitHub the single live state machine. Protocol v4 additionally separates **work availability** from **worker ownership**: an open task is READY; an ACK creates the active owner lease.
+Maestaris therefore makes GitHub the single live state machine. Protocol v4 additionally separates **work availability** from **worker ownership**: an open task is READY; an ACK creates the active owner lease.
 
 ## Design principles
 
@@ -377,7 +377,7 @@ Zerion therefore makes GitHub the single live state machine. Protocol v4 additio
 - **AGENTS.md is the bootstrap.**
 - **Issues are tasks and control-plane histories.**
 - **PRs are work, not mailboxes.**
-- **Actions react to GitHub; ChatGPT workers poll GitHub.**
+- **Actions react to GitHub; web-hosted LLM workers poll GitHub.**
 - **Projects is a dashboard, not canonical state.**
 - **READY work is unowned until an ACK claims it.**
 - **Stable task IDs make retries safe.**

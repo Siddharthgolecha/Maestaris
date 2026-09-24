@@ -8,7 +8,7 @@ Static agent config maps specialist identities to pools.
 
 ## Discover work with GitHub
 
-Pools search open `zerion:task` Issues, filter by structured project/worker fields, then inspect comments for authoritative status.
+Pools search open `maestaris:task` Issues, filter by structured project/worker fields, then inspect comments for authoritative status.
 
 Derived status and priority labels make discovery cheaper but do not replace comment inspection.
 

@@ -1,6 +1,6 @@
 # Architecture
 
-Zerion connects ephemeral reasoning runtimes to durable GitHub coordination.
+Maestaris connects ephemeral reasoning runtimes to durable GitHub coordination.
 
 ```text
 ChatGPT orchestrator / worker chats
@@ -31,7 +31,7 @@ GitHub events
 The repository stores only stable topology and instructions:
 
 - `AGENTS.md`
-- `coordination/zerion.yaml`
+- `coordination/maestaris.yaml`
 - project YAML
 - agent YAML
 - prompts and schemas

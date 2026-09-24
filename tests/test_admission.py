@@ -1,4 +1,4 @@
-from zerion_orchestration.admission import admission_decision
+from maestaris_orchestration.admission import admission_decision
 
 
 def test_unconfigured_repository_preserves_legacy_admission():
