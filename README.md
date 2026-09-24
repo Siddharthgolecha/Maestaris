@@ -1,352 +1,53 @@
-# Maestaris
+<p align="center">
+  <img src="assets/maestaris-logo.png" alt="Maestaris" width="560">
+</p>
 
-**Models reason. GitHub remembers. Maestaris conducts.**
+<p align="center">
+  <strong>Models reason. GitHub remembers. Maestaris conducts.</strong>
+</p>
 
-Maestaris is a lightweight orchestration protocol for running **long-lived projects with ordinary web-hosted LLM conversations**.
+<p align="center">
+  <a href="https://github.com/Siddharthgolecha/Maestaris/actions/workflows/validate-maestaris.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/Siddharthgolecha/Maestaris/validate-maestaris.yml?branch=main&style=flat-square&label=validation"></a>
+  <a href="https://github.com/Siddharthgolecha/Maestaris/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/Siddharthgolecha/Maestaris?style=flat-square"></a>
+  <img alt="Python" src="https://img.shields.io/badge/python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white">
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/Siddharthgolecha/Maestaris?style=flat-square"></a>
+  <a href="https://github.com/Siddharthgolecha/Maestaris/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/Siddharthgolecha/Maestaris?style=flat-square"></a>
+  <img alt="GitHub-native" src="https://img.shields.io/badge/orchestration-GitHub--native-181717?style=flat-square&logo=github">
+</p>
 
-Maestaris does **not** require those conversations to be autonomous "agents." Its basic runtime is a model session—such as an ordinary ChatGPT or Gemini web conversation—taking a worker or orchestrator role. API agents, local coding agents, and event-driven runtimes are optional integrations that use the same durable protocol.
-
-It came from a practical problem: one ChatGPT chat can do serious work, but long research and engineering projects quickly outgrow one conversation. You want an orchestrator, specialist workers, parallel branches, reproducible evidence, hand-offs, and the ability to close a chat and come back later without losing the project.
-
-Maestaris makes GitHub the durable coordination layer.
-
-```text
-web LLM sessions / scheduled sessions
-                 |
-                 | poll
-                 v
-          GitHub task Issues
-                 |
-       +---------+---------+
-       |                   |
-       v                   v
-   worker chat         worker chat
-       |                   |
-       +---------+---------+
-                 |
-                 v
-        task PRs / commits
-        checks / artifacts
-                 |
-                 v
-          orchestrator chat
-```
-
-The invariant is simple:
+Maestaris is a lightweight orchestration protocol for running **long-lived projects with ordinary web-hosted LLM conversations**. Model sessions can act as orchestrators or specialist workers while GitHub provides the durable coordination layer.
 
 > **Any model session may disappear. The project must still be reconstructible from GitHub.**
 
-## What Maestaris is meant for
+## Why Maestaris
 
-Maestaris is useful when you want to treat multiple normal web-hosted LLM conversations as persistent specialist workers:
+- **Persistent by design** — tasks, ACKs, results, reviews, evidence, and provenance live in GitHub.
+- **Model-provider agnostic** — ChatGPT, Gemini, Claude, local agents, API agents, and other runtimes can share the same protocol.
+- **Safe parallel work** — ACK leases, stable task IDs, and idempotent state transitions reduce duplicate work.
+- **GitHub-native** — Issues are tasks, PRs are work, Actions handle mechanical checks, and Projects provides the mission board.
+- **No always-on daemon required** — ordinary chats or scheduled sessions can poll GitHub and continue where another session stopped.
 
-- one model session coordinates the project;
-- other model sessions specialize in theory, implementation, experiments, review, writing, or anything else;
-- scheduled model tasks can periodically poll GitHub when you are away;
-- GitHub holds assignments, ACKs, results, evidence, reviews, branches, PRs, and provenance;
-- GitHub Projects gives you a human dashboard over the same work.
+## How it works
 
-The models do the reasoning. GitHub carries the durable state.
-
-## Maestaris is a seed, not the final repository architecture
-
-A repository created from Maestaris is expected to **evolve away from the template** when the project benefits from it.
-
-The runtime should inspect what GitHub capabilities are available and shape the repository accordingly.
-
-For example, it may decide to:
-
-- create a Project and custom views;
-- use native Issue Types or Issue Fields in an organization;
-- replace free-text dependencies with native sub-issues/dependencies;
-- introduce milestones for phases/releases;
-- add rulesets and required checks;
-- create domain-specific Actions workflows;
-- use Releases, artifacts, or attestations for provenance;
-- restructure directories and add nested `AGENTS.md` files;
-- add an evidence ledger for research, or skip it for a simple software project;
-- remove template mechanisms that have become redundant.
-
-The goal is **not** to keep every Maestaris repository looking identical.
-
-The goal is to preserve a few invariants:
-
-```text
-fresh model session can recover the project
-        +
-tasks are safely owned/idempotent
-        +
-evidence is durable and inspectable
-        +
-negative/blocking results are not erased
-        +
-provenance survives model-session/runtime turnover
+```mermaid
+flowchart LR
+    O[Orchestrator session] -->|creates READY tasks| I[GitHub Issues]
+    I -->|poll + ACK lease| W1[Worker session A]
+    I -->|poll + ACK lease| W2[Worker session B]
+    W1 --> P[Branches / PRs]
+    W2 --> P
+    P --> C[Checks + artifacts]
+    C -->|review evidence| O
 ```
 
-For reversible low-risk choices, the runtime should make a reasonable decision and continue rather than repeatedly asking the user for implementation preferences.
-
-Human confirmation is primarily for destructive, irreversible, permission/security-sensitive, externally costly, publication/visibility-changing, or genuinely goal-ambiguous decisions.
-
-## What Maestaris is not
-
-Maestaris is **not** primarily an API-agent framework.
-
-It does not require:
-
-- spinning up disposable API agents;
-- a separate vector database;
-- a message broker;
-- ChatGPT Work;
-- a daemon running on your computer;
-- a CLI in order for the AI workers to operate.
-
-There is a small CLI for static setup and validation, but the protocol is designed so an LLM runtime can operate directly through GitHub.
-
-## The important constraint: GitHub cannot wake an ordinary chat
-
-GitHub Issues, comments, PRs, and other events can trigger **GitHub Actions**.
-
-They cannot directly invoke an ordinary web-hosted LLM conversation.
-
-So Maestaris deliberately separates two kinds of automation:
-
-```text
-GitHub event
-    |
-    +--> Actions: validate records, sync labels, run tests, update dashboard
-    |
-    X--> does not wake a normal ChatGPT chat
-
-ChatGPT schedule / user invocation
-    |
-    +--> worker polls GitHub
-         finds eligible task
-         ACKs it
-         works
-         reports result
-```
-
-That is why Maestaris is built around **safe polling and idempotency**, not fake webhook-driven chat execution.
-
-## The current model
-
-Maestaris stores stable configuration in the repository and live orchestration state in GitHub itself.
-
-### Stable configuration
-
-```text
-AGENTS.md
-coordination/
-  maestaris.yaml
-  projects/
-  agents/
-prompts/
-```
-
-### Live state
-
-```text
-GitHub task Issue
-  ├── assignment in Issue body
-  ├── ACK in comments
-  ├── DONE / BLOCKED / NEEDS_REVIEW in comments
-  └── ACCEPTED / REVISE / REJECTED in comments
-
-linked task PR
-  ├── code / research / writing changes
-  ├── commits
-  ├── Actions / checks
-  └── artifacts
-```
-
-There is intentionally **no mutable `coordination/state/` directory**.
-
-Keeping a second state machine in YAML created drift and required commits for every coordination transition. GitHub already has durable Issues, comments, PRs, timestamps, close state, and history, so v0.5 uses them directly.
-
-## A task from start to finish
-
-The orchestrator opens:
-
-```text
-[Maestaris task] Prove bounded convergence result
-```
-
-with a structured body:
-
-```text
-[ORCHESTRATOR:v1]
-task_id: convergence-theory-0042
-project: convergence
-priority: P0
-depends_on: []
-...
-```
-
-That Issue is **READY**. No worker owns it yet.
-
-If the work truly requires one specialist, the orchestrator may add `worker: convergence-theory`; otherwise worker pools are free to select an eligible specialist.
-
-A worker pool later polls GitHub, sees the task, verifies there is no valid competing ACK, selects a suitable worker, and comments:
-
-```text
-[WORKER:convergence-theory:v1]
-task_id: convergence-theory-0042
-status: ACK
-dispatcher: pool-A
-claimed_at: ...
-lease_hours: 3
-```
-
-That ACK creates the lease and establishes the worker as the current owner.
-
-For repository work it opens a linked draft PR early.
-
-When finished it posts a terminal result to the Issue with exact evidence. The orchestrator later polls, inspects the actual PR/checks/artifacts, and records ACCEPTED, REVISE, or REJECTED.
-
-If the PR contains `Resolves #42`, GitHub can close the task Issue automatically when the PR merges.
-
-## GitHub Actions do the mechanical work
-
-Maestaris ships an Issue/comment workflow that:
-
-1. validates structured Maestaris task records;
-2. reconstructs the task's current protocol state from Issue comments;
-3. derives GitHub labels such as `maestaris:ready`, `maestaris:claimed`, `maestaris:blocked`, or `maestaris:needs-review`;
-4. preserves unrelated user labels.
-
-Those labels are derived metadata. The Issue history remains authoritative.
-
-## GitHub Projects becomes the mission board
-
-GitHub Projects fits Maestaris well because it can remain a **view over Issues**, rather than another required database.
-
-Recommended setup:
-
-1. Create a GitHub Project for your Maestaris work.
-2. Enable its **Auto-add to project** workflow.
-3. Point it at your repository with:
-
-```text
-is:issue label:"maestaris:task"
-```
-
-4. Enable the built-in workflow that sets newly added items to **Todo**.
-5. Keep the built-in closed-item -> **Done** workflow enabled.
-6. Add useful views such as:
-   - Blocked: `label:maestaris:blocked`
-   - Needs review: `label:maestaris:needs-review`
-   - Ready: `label:maestaris:ready`
-   - Claimed: `label:maestaris:claimed`
-   - P0: `label:priority:P0`
-
-The Project is for visibility. A fresh worker must be able to reconstruct work without reading Project-specific fields.
-
-If desired, Maestaris can also mirror Priority, Status, Worker, Dispatcher, and Runtime into native Project fields using an optional Project token. Labels remain the portable fallback.
-
-See [GitHub Projects](docs/github-projects.md).
-
-## How web-hosted LLM workers use Maestaris
-
-Every Maestaris repository has a root [AGENTS.md](AGENTS.md).
-
-A fresh worker starts there and learns how to:
-
-- resolve its project and role;
-- search for open Maestaris task Issues;
-- derive task state from comments;
-- respect ACK leases;
-- read canonical project documents;
-- inspect PR/check evidence;
-- claim work safely;
-- report durable results.
-
-This lets you start a completely fresh conversation and say something as small as:
-
-> Use Maestaris on this repository. Act as worker pool A.
-
-or:
-
-> Use Maestaris and continue orchestration for this project.
-
-The repository should contain enough durable information for the new chat to recover.
-
-## Suggested multi-AI topology
-
-For a serious project, worker pools do not need to share one model provider:
-
-```text
-                        GitHub READY queue
-                               |
-             +-----------------+-----------------+
-             |                                   |
-      ChatGPT scheduled                    Gemini Spark
-        dispatcher                          dispatcher
-             |                                   |
-             +--------------- ACK lease ---------+
-                               |
-                         task branch / PR
-```
-
-You can also add Claude/Actions, local CLI agents, or API workers. Every runtime uses the same Issue/ACK/result protocol, and the first valid ACK lease owns the task.
-
-A worker identity is not the same thing as a scheduler or provider. Use a unique `dispatcher:` value per scheduler, and optionally record `runtime:` / `instance:` in ACK events.
-
-Staggering provider schedules reduces unnecessary races while still providing failover. For example, ChatGPT and Gemini Spark can check the same pool at different points in the hour.
-
-For runtimes that support schedule management, Maestaris treats the **orchestrator as
-the bootstrap entrypoint**. The user creates one orchestrator in the provider UI and
-can give it only:
-
-```text
-Use Maestaris on OWNER/REPO as orchestrator.
-```
-
-The orchestrator then derives the desired worker pools from
-`coordination/maestaris.yaml` and creates/reconciles its own provider-owned dispatcher
-schedules. GitHub supplies the durable desired state and instructions; GitHub itself
-does not create external ChatGPT/Gemini/Claude tasks. Gemini Spark supports conversational schedule management, so a Gemini
-orchestrator can bootstrap its Pool A/B schedules without the user manually creating
-each one.
-
-See [Multi-AI orchestration](docs/runtime/multi-ai-orchestration.md).
-
-## Repository layout
-
-```text
-AGENTS.md
-coordination/
-  maestaris.yaml
-  projects/
-    example-project.yaml
-  agents/
-    orchestrator.yaml
-    theory-worker.yaml
-    implementation-worker.yaml
-    audit-worker.yaml
-  templates/
-  schema/
-prompts/
-  orchestrator.md
-  worker-pool.md
-  worker.md
-  auditor.md
-docs/
-.github/
-  ISSUE_TEMPLATE/
-  workflows/
-```
+GitHub events can trigger Actions, but they cannot directly wake a normal web-hosted chat. Maestaris therefore separates **event-driven GitHub automation** from **safe model-session polling**.
 
 ## Quick start
 
-Use the repository as a template or copy Maestaris's coordination layer into an existing repository.
-
-Optional local helper:
+Use Maestaris as a template or copy its coordination layer into an existing repository.
 
 ```bash
 python -m pip install -e .
-
-# In a network-restricted environment with dependencies already installed:
-# python -m pip install --no-build-isolation -e .
 
 maestaris init my-project \
   --workers theory implementation audit \
@@ -355,59 +56,48 @@ maestaris init my-project \
 maestaris validate
 ```
 
-The CLI writes only stable configuration. It does not maintain live worker state.
+Then point a fresh model session at the repository:
 
-Then create your ChatGPT orchestrator / worker chats and point them at the repository.
+```text
+Use Maestaris on OWNER/REPO as orchestrator.
+```
 
-## Why not store live task state in YAML?
+or:
 
-Earlier Maestaris versions maintained a state index in the repository.
+```text
+Use Maestaris on OWNER/REPO. Act as worker pool A.
+```
 
-Dogfooding showed that this created the wrong abstraction:
+The repository's root [AGENTS.md](AGENTS.md) is the bootstrap contract for fresh sessions.
 
-- ACKing a task should not require a code commit;
-- Issue comments already have durable ordering and timestamps;
-- a YAML cache could disagree with GitHub;
-- parallel workers could contend on state files;
-- AI runtimes with GitHub connector access may not have shell GitHub access.
+## Core protocol
 
-Maestaris therefore makes GitHub the single live state machine. Protocol v4 additionally separates **work availability** from **worker ownership**: an open task is READY; an ACK creates the active owner lease.
+A task typically moves through:
 
-## Design principles
+```text
+READY → ACK/CLAIMED → PR + evidence → DONE / BLOCKED / NEEDS_REVIEW
+                                      ↓
+                          ACCEPTED / REVISE / REJECTED
+```
 
-- **Chats are workers. GitHub is memory.**
-- **AGENTS.md is the bootstrap.**
-- **Issues are tasks and control-plane histories.**
-- **PRs are work, not mailboxes.**
-- **Actions react to GitHub; web-hosted LLM workers poll GitHub.**
-- **Projects is a dashboard, not canonical state.**
-- **READY work is unowned until an ACK claims it.**
-- **Stable task IDs make retries safe.**
-- **Evidence beats summaries.**
-- **Negative results stay negative.**
-- **Dormancy is healthy.**
-- **No worker is required for project reconstruction.**
-- **The template may evolve. Preserve invariants, not template shape.**
-- **Prefer sensible reversible action over unnecessary permission checks.**
+Live orchestration state stays in GitHub Issues, comments, PRs, checks, and history rather than a second mutable YAML state machine.
 
 ## Documentation
 
-- [Architecture](docs/architecture.md)
-- [Protocol](docs/protocol.md)
-- [GitHub-native integration](docs/github-native.md)
-- [GitHub Projects](docs/github-projects.md)
-- [Multi-model GitHub runtimes](docs/runtime/multi-model-github.md)
-- [Multi-AI orchestration](docs/runtime/multi-ai-orchestration.md)
-- [Optional event-driven adapter](docs/runtime/event-driven-adapter.md)
-- [Releases and versioning](docs/releases.md)
-- [ChatGPT scheduled runtime](docs/runtime/chatgpt-scheduled.md)
-- [Manual chat runtime](docs/runtime/manual-chat.md)
-- [Quick start](docs/quickstart.md)
-- [Failure recovery](docs/failure-recovery.md)
-- [Scaling](docs/scaling.md)
-- [Migrating to v0.5](docs/migration-v0.5.md)
-- [Migrating to v0.6 / protocol v4](docs/migration-v0.6.md)
+| Start here | Deep dive |
+| --- | --- |
+| [Quick start](docs/quickstart.md) | [Architecture](docs/architecture.md) |
+| [Protocol](docs/protocol.md) | [GitHub-native integration](docs/github-native.md) |
+| [GitHub Projects](docs/github-projects.md) | [Multi-AI orchestration](docs/runtime/multi-ai-orchestration.md) |
+| [ChatGPT scheduled runtime](docs/runtime/chatgpt-scheduled.md) | [Failure recovery](docs/failure-recovery.md) |
+| [Releases & versioning](docs/releases.md) | [Scaling](docs/scaling.md) |
+
+## Design principles
+
+**Chats are workers. GitHub is memory.**  
+**Issues are tasks. PRs are work. Evidence beats summaries.**  
+**Preserve invariants, not template shape.**
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE).
