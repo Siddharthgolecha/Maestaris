@@ -7,7 +7,7 @@ Dispatchers should not constrain specialists to the original template structure.
 On each polling run:
 
 1. Read global/project/agent configuration.
-2. Search task Issues for terminal worker reports previously posted by this dispatcher that have no later orchestrator review. Apply `maestaris_orchestration.backpressure.dispatcher_admission` semantics before any unrelated ACK. If the count is at or above `defaults.max_pending_reviews_per_dispatcher`, do not claim new work. If a prior result received REVISE, resume that revised task before unrelated work.
+2. Search task Issues for terminal worker reports previously posted by this dispatcher that have no later orchestrator review. Apply `maestaris_orchestration.backpressure.dispatcher_admission` semantics before any unrelated ACK. If the count is at or above `defaults.max_pending_reviews_per_dispatcher`, do not claim new work. If the count is below the configured limit, pending reviews do not by themselves idle the dispatcher: continue selecting unrelated READY work. If a prior result received REVISE, resume that revised task before unrelated work.
 3. Search open GitHub Issues carrying the configured Maestaris task label.
 4. Prefer Issues in derived state `ready` or `revise`.
 5. Inspect structured project/priority/dependency fields.
