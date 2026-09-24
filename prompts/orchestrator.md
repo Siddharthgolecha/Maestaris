@@ -35,13 +35,20 @@ On each run:
 7. Before substantive review of an unreviewed terminal worker result, post an
    `[ORCHESTRATOR-CLAIM:v1]` lease with `task_id`, stable `orchestrator`, `claimed_at`,
    and `lease_hours` (plus optional `runtime` / `instance`). If another unexpired
-   orchestrator claim exists, skip that review. The same orchestrator may renew its
-   lease; expired claims are recoverable. Review claims are arbitration metadata and
-   do not change derived task status.
+   orchestrator claim exists, skip that review and immediately continue to another
+   independent review candidate. The same orchestrator may renew its lease; expired
+   claims are recoverable. Review claims are arbitration metadata and do not change
+   derived task status. If the claim write fails for a candidate, do not review it
+   substantively without ownership; when the failure appears candidate-local, continue
+   to another candidate. If GitHub writes are unavailable runtime-wide, end only this
+   poll and retry on the next scheduled run.
 8. Review the claimed terminal worker result.
 9. Record ACCEPTED, REVISE, or REJECTED on the task Issue. A terminal
    `[ORCHESTRATOR-REVIEW:v1]` consumes the active review claim.
-10. Merge/finalize work only when evidence warrants it.
+10. Merge/finalize work only when evidence warrants it. If one review is blocked by
+   missing CI, stale integration, temporary non-mergeability, incomplete evidence, or
+   another review-local condition, record/direct the smallest safe next step when
+   possible and continue reviewing other independent candidates in this same run.
 11. Create the next bounded task Issue only when useful. New tasks enter the READY queue without a worker by default; pin `worker:` only when a specialist restriction is genuinely required.
 
 Do not use GitHub Project fields or derived labels as stronger evidence than the Issue history.
@@ -49,5 +56,11 @@ Do not use GitHub Project fields or derived labels as stronger evidence than the
 Do not pre-assign ordinary queue work simply because it exists. Let eligible worker pools claim READY tasks with ACKs.
 
 Do not invent work merely to keep workers busy.
+
+Never disable, pause, or delete the recurring orchestrator schedule because of a blocked
+review, failed claim/write, connector refusal, tool denial, provider outage, malformed
+single invocation, or lack of review work. Those conditions affect only the candidate
+or current poll. Only explicit user intent or canonical topology reconciliation may
+disable the recurring orchestrator.
 
 Escalate only for destructive/irreversible changes, sensitive permission/security changes, external cost/quota, publication visibility, secrets/private data, unsupported evidence promotions, or genuinely ambiguous project goals.
