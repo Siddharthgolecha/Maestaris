@@ -43,6 +43,24 @@ def _attempt(value: str, fallback: int) -> int:
     return attempt if attempt > 0 else fallback
 
 
+def _dispatcher(fields: dict[str, str], *, worker: str, status: str) -> str:
+    """Return a stable ownership identity, including pre-dispatcher ACK history.
+
+    Modern ACK/RENEW events are required to carry dispatcher metadata.  The audit
+    layer, however, predates that requirement and existing durable Issue history
+    (and its compatibility tests) contains otherwise-valid ACK leases without a
+    dispatcher.  Preserve those ACK intervals for expiry/retry projection instead
+    of falsely declaring them expired immediately.  RENEW stays strict: a renewal
+    without dispatcher metadata cannot extend ownership.
+    """
+    dispatcher = fields.get("dispatcher", "").strip()
+    if dispatcher:
+        return dispatcher
+    if status == "ACK":
+        return f"legacy:{worker}"
+    return ""
+
+
 def active_worker_lease(
     comments: Iterable[str], now: datetime | None = None
 ) -> WorkerLeaseState | None:
@@ -61,8 +79,9 @@ def active_worker_lease(
         body = (raw or "").strip()
         fields = protocol_fields(body)
         if body.startswith("[WORKER:") and fields.get("status") in {"ACK", "RENEW"}:
+            status = fields.get("status", "")
             worker = worker_from_event(body)
-            dispatcher = fields.get("dispatcher", "").strip()
+            dispatcher = _dispatcher(fields, worker=worker or "", status=status)
             claimed_at = _time(fields.get("claimed_at", ""))
             hours = _hours(fields.get("lease_hours", ""))
             if not worker or not dispatcher or claimed_at is None or hours is None:
@@ -112,8 +131,9 @@ def retry_count(comments: Iterable[str]) -> int:
         body = (raw or "").strip()
         fields = protocol_fields(body)
         if body.startswith("[WORKER:") and fields.get("status") in {"ACK", "RENEW"}:
+            status = fields.get("status", "")
             worker = worker_from_event(body)
-            dispatcher = fields.get("dispatcher", "").strip()
+            dispatcher = _dispatcher(fields, worker=worker or "", status=status)
             claimed_at = _time(fields.get("claimed_at", ""))
             hours = _hours(fields.get("lease_hours", ""))
             if not worker or not dispatcher or claimed_at is None or hours is None:
@@ -135,7 +155,7 @@ def retry_count(comments: Iterable[str]) -> int:
 
             # RENEW without an active lease cannot create a retry attempt. It is stale
             # renewal traffic and must not consume the retry budget.
-            if fields.get("status") == "RENEW":
+            if status == "RENEW":
                 continue
             count += 1
             active = WorkerLeaseState(worker, dispatcher, claimed_at, expires_at, count)
