@@ -48,7 +48,7 @@ def capability_report(root: Path) -> dict[str, Any]:
 
     return {
         "schema": 1,
-        "kind": "zerion-runtime-capability-report",
+        "kind": "maestaris-runtime-capability-report",
         "root": str(root),
         "platform": {
             "system": platform.system(),
@@ -58,7 +58,7 @@ def capability_report(root: Path) -> dict[str, Any]:
             "python_executable": sys.executable,
         },
         "packages": {
-            "zerion": _package_version("zerion-orchestration"),
+            "maestaris": _package_version("maestaris-orchestration"),
             "pyyaml": _package_version("PyYAML"),
         },
         "local_tools": {
@@ -68,7 +68,7 @@ def capability_report(root: Path) -> dict[str, Any]:
         },
         "local_repository": {
             "git_directory_present": (root / ".git").exists(),
-            "zerion_registry_present": (root / "coordination" / "zerion.yaml").exists(),
+            "maestaris_registry_present": (root / "coordination" / "maestaris.yaml").exists(),
         },
         "runtime_signals": env_presence,
         "connected_services": {
@@ -90,7 +90,7 @@ def render_report(report: dict[str, Any], *, as_json: bool = False) -> str:
     if as_json:
         return json.dumps(report, indent=2, sort_keys=True)
     lines = [
-        "Zerion runtime capability report",
+        "Maestaris runtime capability report",
         f"Python: {report['platform']['python']} ({report['platform']['system']} {report['platform']['machine']})",
     ]
     for name, item in report["local_tools"].items():
@@ -99,7 +99,7 @@ def render_report(report: dict[str, Any], *, as_json: bool = False) -> str:
         lines.append(f"{name}: {state}{suffix}")
     lines.extend(
         [
-            f"Zerion registry: {'present' if report['local_repository']['zerion_registry_present'] else 'missing'}",
+            f"Maestaris registry: {'present' if report['local_repository']['maestaris_registry_present'] else 'missing'}",
             "Connected GitHub/API access: unknown from local shell; report separately.",
             "Missing local tools are not automatically fatal; use hosted CI when appropriate.",
         ]

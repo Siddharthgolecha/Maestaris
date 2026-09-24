@@ -1,6 +1,6 @@
-## Zerion task
+## Maestaris task
 
-Zerion-Task: #<issue-number>
+Maestaris-Task: #<issue-number>
 
 Use a GitHub closing keyword when this PR should complete the task on merge, for example:
 
@@ -18,8 +18,8 @@ For long-running work, open the PR as a **draft** soon after ACK so the work pla
 
 ## Idempotency / recovery impact
 
-- [ ] Linked to the correct Zerion task Issue
-- [ ] `zerion validate`
+- [ ] Linked to the correct Maestaris task Issue
+- [ ] `maestaris validate`
 - [ ] Relevant tests / CI / proof / experiment passed
 - [ ] Fresh worker can reconstruct required state from repository + GitHub Issue/PR evidence
 - [ ] No secrets or project-specific private data added

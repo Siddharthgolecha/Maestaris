@@ -5,7 +5,7 @@ import math
 import re
 from typing import Iterable
 
-TASK_TITLE_PREFIX = "[Zerion task]"
+TASK_TITLE_PREFIX = "[Maestaris task]"
 WORKER_TERMINAL = {"DONE", "BLOCKED", "NEEDS_REVIEW"}
 REVIEW_STATES = {"ACCEPTED", "REVISE", "REJECTED"}
 LEGACY_TASK_STATUSES = {"ASSIGNED"}

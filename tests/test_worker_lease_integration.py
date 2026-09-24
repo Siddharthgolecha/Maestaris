@@ -1,24 +1,24 @@
 from datetime import datetime, timezone
 import unittest
 
-from zerion_orchestration.audit import audit_task
-from zerion_orchestration.protocol import reduce_task_status, validate_protocol_comment
+from maestaris_orchestration.audit import audit_task
+from maestaris_orchestration.protocol import reduce_task_status, validate_protocol_comment
 
 CONFIG = {
-    "task_label": "zerion:task",
+    "task_label": "maestaris:task",
     "status_labels": {
-        "ready": "zerion:ready",
-        "claimed": "zerion:claimed",
-        "blocked": "zerion:blocked",
-        "needs_review": "zerion:needs-review",
-        "accepted": "zerion:accepted",
-        "revise": "zerion:revise",
-        "rejected": "zerion:rejected",
+        "ready": "maestaris:ready",
+        "claimed": "maestaris:claimed",
+        "blocked": "maestaris:blocked",
+        "needs_review": "maestaris:needs-review",
+        "accepted": "maestaris:accepted",
+        "revise": "maestaris:revise",
+        "rejected": "maestaris:rejected",
     },
     "priority_label_prefix": "priority:",
     "worker_retry_budget": 2,
 }
-BODY = "[ORCHESTRATOR:v1]\ntask_id: t1\nproject: zerion\npriority: P0\ndepends_on:\n  []\nobjective: test\n"
+BODY = "[ORCHESTRATOR:v1]\ntask_id: t1\nproject: maestaris\npriority: P0\ndepends_on:\n  []\nobjective: test\n"
 
 
 def event(status="ACK", at="2026-09-23T10:00:00Z", worker="w1", dispatcher="d1"):
@@ -47,7 +47,7 @@ class WorkerLeaseIntegrationTests(unittest.TestCase):
         findings = audit_task(
             issue_body=BODY,
             comments=comments,
-            labels=["zerion:task", "zerion:claimed", "priority:P0"],
+            labels=["maestaris:task", "maestaris:claimed", "priority:P0"],
             github_config=CONFIG,
             now=datetime(2026, 9, 23, 11, 1, tzinfo=timezone.utc),
         )
@@ -64,7 +64,7 @@ class WorkerLeaseIntegrationTests(unittest.TestCase):
         findings = audit_task(
             issue_body=BODY,
             comments=comments,
-            labels=["zerion:task", "zerion:claimed", "priority:P0"],
+            labels=["maestaris:task", "maestaris:claimed", "priority:P0"],
             github_config=CONFIG,
             now=datetime(2026, 9, 23, 12, tzinfo=timezone.utc),
         )

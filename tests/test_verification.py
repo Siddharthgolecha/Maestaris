@@ -1,4 +1,4 @@
-from zerion_orchestration.verification import verification_decision
+from maestaris_orchestration.verification import verification_decision
 
 
 def verified(reviewer, runtime):

@@ -1,22 +1,22 @@
 # Runtime doctor
 
-`zerion doctor` is an optional capability probe for reproducible handoffs. It reports what the current local execution environment can observe without turning the Zerion CLI into a requirement for AI workers.
+`maestaris doctor` is an optional capability probe for reproducible handoffs. It reports what the current local execution environment can observe without turning the Maestaris CLI into a requirement for AI workers.
 
 ```bash
-zerion doctor
-zerion doctor --json > zerion-runtime.json
+maestaris doctor
+maestaris doctor --json > maestaris-runtime.json
 ```
 
 The JSON form is intended to be attached to an Issue, PR, Actions artifact, or other durable handoff when environment differences matter.
 
 ## Output schema
 
-The report has `schema: 1` and `kind: zerion-runtime-capability-report`. It records:
+The report has `schema: 1` and `kind: maestaris-runtime-capability-report`. It records:
 
 - Python, operating system, architecture, and executable;
-- installed Zerion/PyYAML package versions when discoverable;
+- installed Maestaris/PyYAML package versions when discoverable;
 - presence/version of optional local `git`, `gh`, and `lake` commands;
-- whether a local `.git` directory and Zerion registry are present;
+- whether a local `.git` directory and Maestaris registry are present;
 - non-secret CI/runtime signals;
 - an explicit `connected_services.github: unknown` boundary;
 - hosted-CI fallback and claim-semantics notes.

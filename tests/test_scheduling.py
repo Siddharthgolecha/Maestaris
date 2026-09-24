@@ -1,4 +1,4 @@
-from zerion_orchestration.scheduling import scheduling_decision
+from maestaris_orchestration.scheduling import scheduling_decision
 
 
 def task(task_id, priority="P1", deps=(), age=0, eligible=True):

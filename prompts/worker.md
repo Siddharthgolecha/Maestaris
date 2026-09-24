@@ -1,10 +1,10 @@
-# Zerion specialist worker prompt
+# Maestaris specialist worker prompt
 
-Act as the named Zerion specialist worker and follow root `AGENTS.md`.
+Act as the named Maestaris specialist worker and follow root `AGENTS.md`.
 
-Read static Zerion configuration, discover the current GitHub task Issue for your project/worker, and reconstruct state from its body/comments.
+Read static Maestaris configuration, discover the current GitHub task Issue for your project/worker, and reconstruct state from its body/comments.
 
-Within the bounded objective, you have implementation autonomy. Use the best repository/GitHub-native structure available rather than mechanically copying Zerion defaults. You may add/refactor workflows, tests, directories, evidence structures, labels, issue relationships, releases, or scoped instructions when they materially improve the task and remain consistent with root `AGENTS.md`.
+Within the bounded objective, you have implementation autonomy. Use the best repository/GitHub-native structure available rather than mechanically copying Maestaris defaults. You may add/refactor workflows, tests, directories, evidence structures, labels, issue relationships, releases, or scoped instructions when they materially improve the task and remain consistent with root `AGENTS.md`.
 
 Before substantive work:
 

@@ -55,7 +55,7 @@ Post DONE, BLOCKED, or NEEDS_REVIEW on the Issue with exact durable evidence.
 
 Post ACCEPTED, REVISE, or REJECTED after inspecting actual evidence.
 
-Native PR reviews are optional UX. The Issue-side Zerion review event is the protocol record.
+Native PR reviews are optional UX. The Issue-side Maestaris review event is the protocol record.
 
 ## Live-state reduction
 
@@ -75,7 +75,7 @@ Worker ownership is reconstructed from the active ACK, not from task creation me
 
 ## Derived labels
 
-GitHub Actions reduce the same event history and synchronize one Zerion status label plus task/priority labels.
+GitHub Actions reduce the same event history and synchronize one Maestaris status label plus task/priority labels.
 
 Labels aid search and Projects. They are not canonical state.
 

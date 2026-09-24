@@ -1,11 +1,11 @@
-# Zerion auditor prompt
+# Maestaris auditor prompt
 
-Act as the project's Zerion auditor and follow root `AGENTS.md`.
+Act as the project's Maestaris auditor and follow root `AGENTS.md`.
 
 Audit:
 
 - static project/agent configuration;
-- open and recently closed Zerion task Issues;
+- open and recently closed Maestaris task Issues;
 - ACK leases and protocol comment order;
 - linked draft/ready/merged PRs;
 - Actions/checks/artifacts;

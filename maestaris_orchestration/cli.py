@@ -38,12 +38,12 @@ def command_init(args: argparse.Namespace) -> int:
     for role in args.workers:
         validate_name(role, "worker role")
 
-    registry_path = root / "coordination" / "zerion.yaml"
+    registry_path = root / "coordination" / "maestaris.yaml"
     registry = load_yaml(registry_path) if registry_path.exists() else build_registry()
 
     if registry.get("protocol_version") != 4:
         print(
-            "existing Zerion registry is not protocol v4; migrate before init",
+            "existing Maestaris registry is not protocol v4; migrate before init",
             file=sys.stderr,
         )
         return 2
@@ -83,7 +83,7 @@ def command_init(args: argparse.Namespace) -> int:
     registry["projects"] = registered
     dump_yaml(registry_path, registry)
 
-    print(f"Initialized Zerion project '{args.project}' with {len(workers)} worker(s).")
+    print(f"Initialized Maestaris project '{args.project}' with {len(workers)} worker(s).")
     if created_agents_md:
         print("Created root AGENTS.md entry point.")
     print(f"Project registry: {project_path.relative_to(root)}")
@@ -97,19 +97,19 @@ def command_validate(args: argparse.Namespace) -> int:
     result = validate_repository(root)
 
     if result.errors:
-        print("Zerion configuration validation FAILED", file=sys.stderr)
+        print("Maestaris configuration validation FAILED", file=sys.stderr)
         for error in result.errors:
             print(f"- {error}", file=sys.stderr)
         return 1
 
     if result.warnings and not getattr(args, "quiet", False):
-        print("Zerion configuration warnings:", file=sys.stderr)
+        print("Maestaris configuration warnings:", file=sys.stderr)
         for warning in result.warnings:
             print(f"- {warning}", file=sys.stderr)
 
     if not getattr(args, "quiet", False):
         print(
-            f"Zerion configuration validation OK: "
+            f"Maestaris configuration validation OK: "
             f"{len(result.projects)} project(s), {len(result.agents)} agent(s)"
         )
     return 0
@@ -137,7 +137,7 @@ def command_status(args: argparse.Namespace) -> int:
         )
         return 0 if result.ok else 1
 
-    print("Zerion live task state is in GitHub Issues/PRs, not local YAML.")
+    print("Maestaris live task state is in GitHub Issues/PRs, not local YAML.")
     print("PROJECT                  STATUS      WORKERS  REPOSITORY")
     print("-----------------------  ----------  -------  ------------------------------")
     for name, project in sorted(result.projects.items()):
@@ -168,7 +168,7 @@ def command_doctor(args: argparse.Namespace) -> int:
 
 def command_audit(args: argparse.Namespace) -> int:
     root = _root(args.root)
-    registry = load_yaml(root / "coordination" / "zerion.yaml")
+    registry = load_yaml(root / "coordination" / "maestaris.yaml")
     input_path = Path(args.input)
     snapshot = json.loads(input_path.read_text(encoding="utf-8"))
     report = audit_snapshot(snapshot, registry["github"], now=datetime.now(timezone.utc))
@@ -202,7 +202,7 @@ def command_audit(args: argparse.Namespace) -> int:
             for finding in item["findings"]
         ]
         globals_ = report["global_findings"]
-        print(f"Zerion audit: {len(findings) + len(globals_)} finding(s)")
+        print(f"Maestaris audit: {len(findings) + len(globals_)} finding(s)")
         for issue, finding in findings:
             print(
                 f"- issue #{issue}: {finding['severity']} "
@@ -231,14 +231,14 @@ def command_audit(args: argparse.Namespace) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="zerion",
-        description="Static setup and validation for GitHub-native Zerion projects.",
+        prog="maestaris",
+        description="Static setup and validation for GitHub-native Maestaris projects.",
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     parser.add_argument("--root", default=".", help="repository root (default: current directory)")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    init = sub.add_parser("init", help="register a new Zerion project")
+    init = sub.add_parser("init", help="register a new Maestaris project")
     init.add_argument("project")
     init.add_argument("--title")
     init.add_argument(
@@ -255,7 +255,7 @@ def build_parser() -> argparse.ArgumentParser:
     init.add_argument("--force", action="store_true")
     init.set_defaults(func=command_init)
 
-    validate = sub.add_parser("validate", help="validate static Zerion configuration")
+    validate = sub.add_parser("validate", help="validate static Maestaris configuration")
     validate.set_defaults(func=command_validate)
 
     status = sub.add_parser("status", help="show static project registration")

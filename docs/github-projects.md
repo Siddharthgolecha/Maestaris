@@ -1,12 +1,12 @@
-# GitHub Projects with Zerion
+# GitHub Projects with Maestaris
 
-GitHub Projects is an excellent **mission board** for Zerion, but it is intentionally not part of the canonical protocol.
+GitHub Projects is an excellent **mission board** for Maestaris, but it is intentionally not part of the canonical protocol.
 
 A worker must be able to reconstruct a task from repository config plus the GitHub Issue/PR history even if the Project is deleted.
 
 ## Why Projects fits
 
-Zerion task Issues already contain the durable work items.
+Maestaris task Issues already contain the durable work items.
 
 The shipped GitHub Action derives labels from protocol events. GitHub Projects can auto-add matching Issues and provide board/table/roadmap views over them.
 
@@ -16,13 +16,13 @@ No duplicate task database is required.
 
 Create a GitHub Project owned by your user or organization.
 
-In the Project's **Workflows** settings, enable **Auto-add to project** for the Zerion repository with:
+In the Project's **Workflows** settings, enable **Auto-add to project** for the Maestaris repository with:
 
 ```text
-is:issue label:"zerion:task"
+is:issue label:"maestaris:task"
 ```
 
-Zerion's repository workflow adds the `zerion:task` label to valid task Issues. GitHub's auto-add workflow can therefore pick them up after creation/update.
+Maestaris's repository workflow adds the `maestaris:task` label to valid task Issues. GitHub's auto-add workflow can therefore pick them up after creation/update.
 
 Also enable:
 
@@ -38,25 +38,25 @@ Filter open task Issues.
 ### Ready
 
 ```text
-label:zerion:ready
+label:maestaris:ready
 ```
 
 ### Claimed
 
 ```text
-label:zerion:claimed
+label:maestaris:claimed
 ```
 
 ### Needs review
 
 ```text
-label:zerion:needs-review
+label:maestaris:needs-review
 ```
 
 ### Blocked
 
 ```text
-label:zerion:blocked
+label:maestaris:blocked
 ```
 
 ### Priority
@@ -69,16 +69,16 @@ label:priority:P0
 
 ## Status labels
 
-Zerion derives exactly one live status label from the Issue event history. READY means the work is available and has no active ACK owner:
+Maestaris derives exactly one live status label from the Issue event history. READY means the work is available and has no active ACK owner:
 
 ```text
-zerion:ready
-zerion:claimed
-zerion:blocked
-zerion:needs-review
-zerion:accepted
-zerion:revise
-zerion:rejected
+maestaris:ready
+maestaris:claimed
+maestaris:blocked
+maestaris:needs-review
+maestaris:accepted
+maestaris:revise
+maestaris:rejected
 ```
 
 These are dashboard/search metadata.
@@ -91,11 +91,11 @@ You may add fields such as Worker, Project, Priority, Research phase, Release, D
 
 Do not make custom fields mandatory for worker correctness unless every runtime you use can reliably read/write GitHub Projects.
 
-For the default Zerion setup, structured Issue bodies remain portable across ChatGPT, Gemini Spark, Claude, API agents, and other GitHub-connected runtimes.
+For the default Maestaris setup, structured Issue bodies remain portable across ChatGPT, Gemini Spark, Claude, API agents, and other GitHub-connected runtimes.
 
 ### Optional automatic field synchronization
 
-Labels are always the portable fallback. If you want the native Project fields themselves to stay synchronized, enable `github.projects.field_sync` in `coordination/zerion.yaml`.
+Labels are always the portable fallback. If you want the native Project fields themselves to stay synchronized, enable `github.projects.field_sync` in `coordination/maestaris.yaml`.
 
 The shipped event workflow can mirror:
 
@@ -107,10 +107,10 @@ Set these repository values:
 
 ```text
 Repository variable:
-  ZERION_PROJECT_ID=<ProjectV2 node ID>
+  MAESTARIS_PROJECT_ID=<ProjectV2 node ID>
 
 Repository secret:
-  ZERION_PROJECT_TOKEN=<token with permission to update that Project>
+  MAESTARIS_PROJECT_TOKEN=<token with permission to update that Project>
 ```
 
 Then set:
@@ -122,7 +122,7 @@ github:
       enabled: true
 ```
 
-The Project should contain fields matching the configured names. By default Zerion expects:
+The Project should contain fields matching the configured names. By default Maestaris expects:
 
 ```text
 Priority     single select: P0 / P1 / P2
@@ -132,7 +132,7 @@ Dispatcher   text
 Runtime      text
 ```
 
-The mappings are configurable in `coordination/zerion.yaml`.
+The mappings are configurable in `coordination/maestaris.yaml`.
 
 A personal/user Project commonly needs credentials beyond the repository's normal `GITHUB_TOKEN`; that is why Project synchronization uses a separate optional token. If the token/project ID is absent, the workflow safely skips Project mutation and the normal labels continue to work.
 
@@ -146,12 +146,12 @@ GitHub Projects and Actions react to GitHub events.
 
 They do not wake an ordinary ChatGPT conversation.
 
-Scheduled/manual Zerion workers still poll GitHub for eligible work.
+Scheduled/manual Maestaris workers still poll GitHub for eligible work.
 
 ## Advanced Projects API automation
 
 GitHub exposes Projects through GraphQL and Actions can automate Projects with appropriate credentials.
 
-This is optional. It may require permissions beyond the repository's normal `GITHUB_TOKEN`, so Zerion's core does not depend on it.
+This is optional. It may require permissions beyond the repository's normal `GITHUB_TOKEN`, so Maestaris's core does not depend on it.
 
 Prefer GitHub's built-in auto-add/status workflows when they are sufficient.

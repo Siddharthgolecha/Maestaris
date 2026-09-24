@@ -6,7 +6,7 @@ A continuing owner may post a `RENEW` event using the same worker/dispatcher ide
 
 Retry accounting counts distinct valid ACK attempts, not renewal records or duplicate polling. `defaults.worker_retry_budget` controls the default budget. Once the budget is exhausted with no active lease, the derived recovery state is `quarantine`: a holding state requiring orchestrator inspection. Quarantine never deletes or rewrites prior ACKs, failures, BLOCKED reports, or negative evidence.
 
-The pure projection lives in `zerion_orchestration.worker_leases`. `active_worker_lease()` returns the current valid owner, `retry_count()` reconstructs attempts, and `recovery_state()` yields `claimed`, `ready`, or `quarantine`. The audit path consumes this projection: an expired claimed lease produces `expired-worker-lease`, while an exhausted retry budget produces `worker-retry-quarantine`. Both are non-repairable diagnostics because recovery is derived from Issue history; audit never rewrites canonical comments.
+The pure projection lives in `maestaris_orchestration.worker_leases`. `active_worker_lease()` returns the current valid owner, `retry_count()` reconstructs attempts, and `recovery_state()` yields `claimed`, `ready`, or `quarantine`. The audit path consumes this projection: an expired claimed lease produces `expired-worker-lease`, while an exhausted retry budget produces `worker-retry-quarantine`. Both are non-repairable diagnostics because recovery is derived from Issue history; audit never rewrites canonical comments.
 
 Example renewal record:
 
@@ -16,7 +16,7 @@ task_id: example
 status: RENEW
 dispatcher: chatgpt-pool-b
 runtime: chatgpt
-instance: Zerion Worker Pool B
+instance: Maestaris Worker Pool B
 claimed_at: 2026-09-23T15:00:00Z
 lease_hours: 3
 attempt: 1

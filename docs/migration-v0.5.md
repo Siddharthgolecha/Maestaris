@@ -1,4 +1,4 @@
-# Migrating to Zerion v0.5
+# Migrating to Maestaris v0.5
 
 v0.5 is intentionally breaking.
 
@@ -33,11 +33,11 @@ protocol_version: 3
 
 github:
   task_transport: issue
-  task_label: "zerion:task"
+  task_label: "maestaris:task"
   ...
 ```
 
-Use the current `coordination/zerion.yaml` as the reference.
+Use the current `coordination/maestaris.yaml` as the reference.
 
 ## Preserve history
 
@@ -49,7 +49,7 @@ Closed/old PRs remain useful provenance.
 
 For each active task:
 
-1. create a structured Zerion task Issue if one does not already exist;
+1. create a structured Maestaris task Issue if one does not already exist;
 2. copy only the current assignment/blocker/result references needed for continuity;
 3. link existing task PRs/commits/evidence;
 4. record the current valid ACK if a worker still owns the task;
@@ -62,7 +62,7 @@ Do not migrate every historical comment merely to recreate chat history.
 After v0.5 Actions are active, configure a GitHub Project auto-add workflow with:
 
 ```text
-is:issue label:"zerion:task"
+is:issue label:"maestaris:task"
 ```
 
 Projects is optional and derived.
@@ -72,7 +72,7 @@ Projects is optional and derived.
 Run:
 
 ```bash
-zerion validate
+maestaris validate
 ```
 
 Protocol v3 validation deliberately fails if removed state/mailbox files remain.

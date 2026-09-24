@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 import unittest
 
-from zerion_orchestration.protocol import (
+from maestaris_orchestration.protocol import (
     active_review_claim,
     reduce_task_status,
     review_claim_available,
@@ -17,7 +17,7 @@ class ReviewLeaseTests(unittest.TestCase):
 task_id: t1
 orchestrator: chatgpt-orchestrator
 runtime: chatgpt
-instance: zerion-chatgpt-orchestrator
+instance: maestaris-chatgpt-orchestrator
 claimed_at: 2026-09-23T04:00:00Z
 lease_hours: 1
 """

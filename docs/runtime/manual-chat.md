@@ -1,10 +1,10 @@
 # Manual chat runtime
 
-Zerion also works without scheduling.
+Maestaris also works without scheduling.
 
 Keep one orchestrator conversation and any number of specialist conversations.
 
-At the start of a turn, tell the chat to use Zerion on the repository and read `AGENTS.md`.
+At the start of a turn, tell the chat to use Maestaris on the repository and read `AGENTS.md`.
 
 The chat reconstructs current state from GitHub task Issues/comments and linked evidence rather than relying on prior conversation context.
 

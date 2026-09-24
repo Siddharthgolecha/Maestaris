@@ -20,7 +20,7 @@ class ReusableRuntimeTests(unittest.TestCase):
             consumer = Path(tmp)
             coordination = consumer / "coordination"
             coordination.mkdir()
-            (coordination / "zerion.yaml").write_text(
+            (coordination / "maestaris.yaml").write_text(
                 yaml.safe_dump(
                     {
                         "github": {
@@ -49,7 +49,7 @@ class ReusableRuntimeTests(unittest.TestCase):
                 encoding="utf-8",
             )
             env = os.environ.copy()
-            env["ZERION_PROJECT_ROOT"] = str(consumer)
+            env["MAESTARIS_PROJECT_ROOT"] = str(consumer)
             env["GITHUB_EVENT_PATH"] = str(event)
             result = subprocess.run(
                 [sys.executable, str(ROOT / "scripts" / "validate_github_event.py")],
@@ -63,11 +63,11 @@ class ReusableRuntimeTests(unittest.TestCase):
             self.assertIn("validation OK", result.stdout)
 
     def test_reusable_workflow_exposes_workflow_call(self):
-        workflow = (ROOT / ".github" / "workflows" / "reusable-zerion.yml").read_text(
+        workflow = (ROOT / ".github" / "workflows" / "reusable-maestaris.yml").read_text(
             encoding="utf-8"
         )
         self.assertIn("workflow_call:", workflow)
-        self.assertIn("ZERION_PROJECT_ROOT", workflow)
+        self.assertIn("MAESTARIS_PROJECT_ROOT", workflow)
         self.assertIn("issues: write", workflow)
 
 

@@ -26,6 +26,6 @@ runtime: <runtime when relevant>
 evidence: <PR/check/artifact/commit references>
 ```
 
-The orchestrator reconstructs implementation ownership/runtime and verification records from GitHub, evaluates `zerion_orchestration.verification.verification_decision`, and must not post `ACCEPTED` while a configured policy is unsatisfied. Review-claim arbitration remains separate: holding an orchestrator review lease does not itself satisfy independent verification.
+The orchestrator reconstructs implementation ownership/runtime and verification records from GitHub, evaluates `maestaris_orchestration.verification.verification_decision`, and must not post `ACCEPTED` while a configured policy is unsatisfied. Review-claim arbitration remains separate: holding an orchestrator review lease does not itself satisfy independent verification.
 
 Provider/runtime metadata remains advisory unless a task explicitly requests runtime independence. A provider self-description is not verification evidence; the referenced checks/artifacts must be inspected normally.

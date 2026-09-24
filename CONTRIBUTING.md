@@ -1,6 +1,6 @@
 # Contributing
 
-Contributions are welcome. Keep changes small, reviewable, and aligned with Zerion's repository-first invariant.
+Contributions are welcome. Keep changes small, reviewable, and aligned with Maestaris's repository-first invariant.
 
 For protocol changes, explain:
 

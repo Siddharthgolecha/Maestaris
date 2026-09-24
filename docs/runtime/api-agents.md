@@ -1,6 +1,6 @@
 # API-agent runtime
 
-API agents are an optional Zerion runtime.
+API agents are an optional Maestaris runtime.
 
 They use the same GitHub-native protocol as ordinary ChatGPT workers:
 

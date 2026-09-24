@@ -11,20 +11,20 @@ defaults:
 
 github:
   task_transport: issue
-  task_title_prefix: "[Zerion task]"
-  task_label: "zerion:task"
+  task_title_prefix: "[Maestaris task]"
+  task_label: "maestaris:task"
   status_labels:
-    ready: "zerion:ready"
-    claimed: "zerion:claimed"
-    blocked: "zerion:blocked"
-    needs_review: "zerion:needs-review"
-    accepted: "zerion:accepted"
-    revise: "zerion:revise"
-    rejected: "zerion:rejected"
+    ready: "maestaris:ready"
+    claimed: "maestaris:claimed"
+    blocked: "maestaris:blocked"
+    needs_review: "maestaris:needs-review"
+    accepted: "maestaris:accepted"
+    revise: "maestaris:revise"
+    rejected: "maestaris:rejected"
   priority_label_prefix: "priority:"
   task_pull_request:
     draft_on_start: true
-    branch_prefix: zerion/task
+    branch_prefix: maestaris/task
     link_keyword: Resolves
   native_reviews:
     accepted: APPROVE
@@ -32,11 +32,11 @@ github:
     same_actor_fallback: COMMENT
   projects:
     optional: true
-    auto_add_filter: 'is:issue label:"zerion:task"'
+    auto_add_filter: 'is:issue label:"maestaris:task"'
     field_sync:
       enabled: true
-      project_id_env: ZERION_PROJECT_ID
-      token_env: ZERION_PROJECT_TOKEN
+      project_id_env: MAESTARIS_PROJECT_ID
+      token_env: MAESTARIS_PROJECT_TOKEN
       fields:
         priority: Priority
         status: Status
@@ -68,7 +68,7 @@ scheduler_bootstrap:
   source: pools
   cadence: hourly
   reconcile_existing: true
-  instance_template: "zerion-{runtime}-pool-{pool}"
+  instance_template: "maestaris-{runtime}-pool-{pool}"
   schedule_minutes:
     chatgpt:
       A: 22
@@ -78,7 +78,7 @@ scheduler_bootstrap:
       B: 7
   orchestrator_schedule:
     enabled: true
-    instance_template: "zerion-{runtime}-orchestrator"
+    instance_template: "maestaris-{runtime}-orchestrator"
     schedule_minutes:
       chatgpt: 7
       gemini-spark: 22

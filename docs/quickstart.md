@@ -1,6 +1,6 @@
 # Quick start
 
-## 1. Put Zerion in the repository
+## 1. Put Maestaris in the repository
 
 Use this repository as a template or copy its `AGENTS.md`, `coordination/`, `prompts/`, and relevant `.github/` files.
 
@@ -8,10 +8,10 @@ Optional helper:
 
 ```bash
 python -m pip install -e .
-zerion init my-project \
+maestaris init my-project \
   --workers theory implementation audit \
   --repository owner/repository
-zerion validate
+maestaris validate
 ```
 
 The CLI creates static configuration only.
@@ -28,13 +28,13 @@ The same scheduled pool can service multiple specialist identities.
 
 ## 3. Point chats at GitHub
 
-Tell a fresh conversation to read `AGENTS.md` and operate Zerion on the repository.
+Tell a fresh conversation to read `AGENTS.md` and operate Maestaris on the repository.
 
 Workers discover live work from GitHub Issues rather than chat memory.
 
 ## 4. Create tasks
 
-Create a structured `[Zerion task]` Issue.
+Create a structured `[Maestaris task]` Issue.
 
 The worker ACKs in a comment, performs the bounded work, links a draft PR when appropriate, and posts its terminal result on the Issue.
 
@@ -47,7 +47,7 @@ The shipped workflow validates protocol records and derives labels from the Issu
 Create a Project and configure Auto-add with:
 
 ```text
-is:issue label:"zerion:task"
+is:issue label:"maestaris:task"
 ```
 
 Use labels for Blocked, Needs review, Claimed, and Priority views.

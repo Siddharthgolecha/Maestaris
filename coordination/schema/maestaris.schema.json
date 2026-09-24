@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Zerion Registry",
+  "title": "Maestaris Registry",
   "type": "object",
   "required": [
     "schema", "protocol_version", "entrypoint", "canonical_branch",

@@ -9,7 +9,7 @@ labels: bug
 
 ## Expected behavior
 
-## Zerion version / commit
+## Maestaris version / commit
 
 ## Relevant configuration
 

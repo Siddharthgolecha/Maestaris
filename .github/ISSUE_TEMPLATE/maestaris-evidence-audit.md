@@ -1,7 +1,7 @@
 ---
-name: Zerion evidence audit
+name: Maestaris evidence audit
 about: Audit whether durable evidence supports project claim/status records
-title: "[Zerion audit] "
+title: "[Maestaris audit] "
 assignees: ""
 ---
 

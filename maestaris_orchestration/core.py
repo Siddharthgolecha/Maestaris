@@ -54,11 +54,11 @@ def validate_name(value: str, label: str = "name") -> None:
         )
 
 
-DEFAULT_AGENTS_MD = """# Zerion agent operating instructions
+DEFAULT_AGENTS_MD = """# Maestaris agent operating instructions
 
-This repository uses Zerion's GitHub-native orchestration protocol.
+This repository uses Maestaris's GitHub-native orchestration protocol.
 
-Read `coordination/zerion.yaml`, the relevant project and agent configuration, then discover live work from GitHub task Issues. Do not expect mutable worker-state YAML: Issues, comments, pull requests, checks, and artifacts are the live system of record.
+Read `coordination/maestaris.yaml`, the relevant project and agent configuration, then discover live work from GitHub task Issues. Do not expect mutable worker-state YAML: Issues, comments, pull requests, checks, and artifacts are the live system of record.
 
 Repository/GitHub evidence is authoritative over chat memory.
 
@@ -89,21 +89,21 @@ def build_registry() -> dict[str, Any]:
         },
         "github": {
             "task_transport": "issue",
-            "task_title_prefix": "[Zerion task]",
-            "task_label": "zerion:task",
+            "task_title_prefix": "[Maestaris task]",
+            "task_label": "maestaris:task",
             "status_labels": {
-                "ready": "zerion:ready",
-                "claimed": "zerion:claimed",
-                "blocked": "zerion:blocked",
-                "needs_review": "zerion:needs-review",
-                "accepted": "zerion:accepted",
-                "revise": "zerion:revise",
-                "rejected": "zerion:rejected",
+                "ready": "maestaris:ready",
+                "claimed": "maestaris:claimed",
+                "blocked": "maestaris:blocked",
+                "needs_review": "maestaris:needs-review",
+                "accepted": "maestaris:accepted",
+                "revise": "maestaris:revise",
+                "rejected": "maestaris:rejected",
             },
             "priority_label_prefix": "priority:",
             "task_pull_request": {
                 "draft_on_start": True,
-                "branch_prefix": "zerion/task",
+                "branch_prefix": "maestaris/task",
                 "link_keyword": "Resolves",
             },
             "native_reviews": {
@@ -113,11 +113,11 @@ def build_registry() -> dict[str, Any]:
             },
             "projects": {
                 "optional": True,
-                "auto_add_filter": 'is:issue label:"zerion:task"',
+                "auto_add_filter": 'is:issue label:"maestaris:task"',
                 "field_sync": {
                     "enabled": False,
-                    "project_id_env": "ZERION_PROJECT_ID",
-                    "token_env": "ZERION_PROJECT_TOKEN",
+                    "project_id_env": "MAESTARIS_PROJECT_ID",
+                    "token_env": "MAESTARIS_PROJECT_TOKEN",
                     "fields": {
                         "priority": "Priority",
                         "status": "Status",
@@ -149,14 +149,14 @@ def build_registry() -> dict[str, Any]:
             "source": "pools",
             "cadence": "hourly",
             "reconcile_existing": True,
-            "instance_template": "zerion-{runtime}-pool-{pool}",
+            "instance_template": "maestaris-{runtime}-pool-{pool}",
             "schedule_minutes": {
                 "chatgpt": {"A": 22, "B": 52},
                 "gemini-spark": {"A": 37, "B": 7},
             },
             "orchestrator_schedule": {
                 "enabled": True,
-                "instance_template": "zerion-{runtime}-orchestrator",
+                "instance_template": "maestaris-{runtime}-orchestrator",
                 "schedule_minutes": {
                     "chatgpt": 7,
                     "gemini-spark": 22,
@@ -213,7 +213,7 @@ def _legacy_files(root: Path) -> list[Path]:
 
 def validate_repository(root: Path) -> ValidationResult:
     base = root / "coordination"
-    registry_path = base / "zerion.yaml"
+    registry_path = base / "maestaris.yaml"
     projects_dir = base / "projects"
     agents_dir = base / "agents"
 
@@ -235,7 +235,7 @@ def validate_repository(root: Path) -> ValidationResult:
         )
 
     if not registry_path.exists():
-        errors.append(f"{registry_path}: missing Zerion registry")
+        errors.append(f"{registry_path}: missing Maestaris registry")
     else:
         try:
             registry = load_yaml(registry_path)
@@ -445,7 +445,7 @@ def validate_repository(root: Path) -> ValidationResult:
             if pool not in (None, "none") and pool not in pools:
                 errors.append(
                     f"agent {agent_name}: dispatcher_pool {pool!r} "
-                    "is not in coordination/zerion.yaml"
+                    "is not in coordination/maestaris.yaml"
                 )
 
     required_workers: set[str] = set()

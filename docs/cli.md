@@ -1,8 +1,8 @@
-# Zerion CLI
+# Maestaris CLI
 
 The CLI is optional and intentionally small.
 
-AI workers do not need it to operate Zerion.
+AI workers do not need it to operate Maestaris.
 
 ## Install
 
@@ -19,17 +19,17 @@ python -m pip install --no-build-isolation -e .
 ## Initialize static configuration
 
 ```bash
-zerion init my-project \
+maestaris init my-project \
   --workers theory implementation audit \
   --repository owner/repository
 ```
 
-If `--repository` is omitted, Zerion tries to infer the GitHub repository from the local `origin` URL without contacting GitHub.
+If `--repository` is omitted, Maestaris tries to infer the GitHub repository from the local `origin` URL without contacting GitHub.
 
 ## Validate
 
 ```bash
-zerion validate
+maestaris validate
 ```
 
 Validation covers static protocol topology. Live task correctness is validated through GitHub Issue/comment workflows.
@@ -37,7 +37,7 @@ Validation covers static protocol topology. Live task correctness is validated t
 ## Status
 
 ```bash
-zerion status
+maestaris status
 ```
 
 This reports static project registration only and explicitly points users to GitHub for live task state.

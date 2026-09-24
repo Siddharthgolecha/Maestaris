@@ -8,10 +8,10 @@ import unittest
 
 import yaml
 
-from zerion_orchestration.cli import main
-from zerion_orchestration.core import validate_repository
-from zerion_orchestration.project_sync import latest_ack, project_field_values
-from zerion_orchestration.protocol import (
+from maestaris_orchestration.cli import main
+from maestaris_orchestration.core import validate_repository
+from maestaris_orchestration.project_sync import latest_ack, project_field_values
+from maestaris_orchestration.protocol import (
     desired_managed_labels,
     is_managed_label,
     pinned_worker,
@@ -22,7 +22,7 @@ from zerion_orchestration.protocol import (
 )
 
 
-class ZerionProtocolV4Tests(unittest.TestCase):
+class MaestarisProtocolV4Tests(unittest.TestCase):
     def init_project(self, root: Path) -> int:
         return main(
             [
@@ -42,7 +42,7 @@ class ZerionProtocolV4Tests(unittest.TestCase):
             self.assertEqual(code, 0)
 
             registry = yaml.safe_load(
-                (root / "coordination" / "zerion.yaml").read_text()
+                (root / "coordination" / "maestaris.yaml").read_text()
             )
             project = yaml.safe_load(
                 (root / "coordination" / "projects" / "alpha.yaml").read_text()
@@ -50,7 +50,7 @@ class ZerionProtocolV4Tests(unittest.TestCase):
 
             self.assertEqual(registry["protocol_version"], 4)
             self.assertEqual(registry["github"]["task_transport"], "issue")
-            self.assertEqual(registry["github"]["task_label"], "zerion:task")
+            self.assertEqual(registry["github"]["task_label"], "maestaris:task")
             self.assertFalse(
                 registry["github"]["projects"]["field_sync"]["enabled"]
             )
@@ -60,7 +60,7 @@ class ZerionProtocolV4Tests(unittest.TestCase):
             )
             self.assertEqual(
                 registry["github"]["status_labels"]["ready"],
-                "zerion:ready",
+                "maestaris:ready",
             )
             self.assertNotIn("assigned", registry["github"]["status_labels"])
             self.assertTrue(registry["scheduler_bootstrap"]["enabled"])
@@ -70,7 +70,7 @@ class ZerionProtocolV4Tests(unittest.TestCase):
             self.assertEqual(registry["scheduler_bootstrap"]["source"], "pools")
             self.assertEqual(
                 registry["scheduler_bootstrap"]["instance_template"],
-                "zerion-{runtime}-pool-{pool}",
+                "maestaris-{runtime}-pool-{pool}",
             )
             self.assertEqual(
                 registry["scheduler_bootstrap"]["schedule_minutes"]["gemini-spark"],
@@ -81,7 +81,7 @@ class ZerionProtocolV4Tests(unittest.TestCase):
             )
             self.assertEqual(
                 registry["scheduler_bootstrap"]["orchestrator_schedule"]["instance_template"],
-                "zerion-{runtime}-orchestrator",
+                "maestaris-{runtime}-orchestrator",
             )
             self.assertEqual(
                 registry["scheduler_bootstrap"]["orchestrator_schedule"]["schedule_minutes"],
@@ -163,7 +163,7 @@ objective: |
   Prove one bounded claim.
 """
         self.assertEqual(
-            validate_task_issue("[Zerion task] bounded proof", body),
+            validate_task_issue("[Maestaris task] bounded proof", body),
             [],
         )
         self.assertIsNone(pinned_worker(body))
@@ -180,7 +180,7 @@ objective: |
   Perform the security audit.
 """
         self.assertEqual(
-            validate_task_issue("[Zerion task] security audit", body),
+            validate_task_issue("[Maestaris task] security audit", body),
             [],
         )
         self.assertEqual(pinned_worker(body), "alpha-security")
@@ -197,7 +197,7 @@ objective: |
   Complete legacy work.
 """
         self.assertEqual(
-            validate_task_issue("[Zerion task] legacy task", body),
+            validate_task_issue("[Maestaris task] legacy task", body),
             [],
         )
 
@@ -211,7 +211,7 @@ priority: P1
 objective: |
   Invalid initial status.
 """
-        errors = validate_task_issue("[Zerion task] bad task", body)
+        errors = validate_task_issue("[Maestaris task] bad task", body)
         self.assertTrue(any("status" in error for error in errors))
 
     def test_ack_establishes_worker_identity_and_claim(self):
@@ -261,15 +261,15 @@ summary: new evidence is ready
 
     def test_ready_and_claimed_labels_are_derived_from_events(self):
         github = {
-            "task_label": "zerion:task",
+            "task_label": "maestaris:task",
             "status_labels": {
-                "ready": "zerion:ready",
-                "claimed": "zerion:claimed",
-                "blocked": "zerion:blocked",
-                "needs_review": "zerion:needs-review",
-                "accepted": "zerion:accepted",
-                "revise": "zerion:revise",
-                "rejected": "zerion:rejected",
+                "ready": "maestaris:ready",
+                "claimed": "maestaris:claimed",
+                "blocked": "maestaris:blocked",
+                "needs_review": "maestaris:needs-review",
+                "accepted": "maestaris:accepted",
+                "revise": "maestaris:revise",
+                "rejected": "maestaris:rejected",
             },
             "priority_label_prefix": "priority:",
         }
@@ -280,7 +280,7 @@ priority: P0
 """
         self.assertEqual(
             desired_managed_labels(body, [], github),
-            {"zerion:task", "zerion:ready", "priority:P0"},
+            {"maestaris:task", "maestaris:ready", "priority:P0"},
         )
 
         ack = """[WORKER:alpha-theory:v1]
@@ -292,9 +292,9 @@ lease_hours: 3
 """
         self.assertEqual(
             desired_managed_labels(body, [ack], github),
-            {"zerion:task", "zerion:claimed", "priority:P0"},
+            {"maestaris:task", "maestaris:claimed", "priority:P0"},
         )
-        self.assertTrue(is_managed_label("zerion:ready", github))
+        self.assertTrue(is_managed_label("maestaris:ready", github))
         self.assertTrue(is_managed_label("priority:P1", github))
         self.assertFalse(is_managed_label("documentation", github))
 

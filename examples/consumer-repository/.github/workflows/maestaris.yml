@@ -1,4 +1,4 @@
-name: Zerion protocol
+name: Maestaris protocol
 
 on:
   issues:
@@ -11,7 +11,7 @@ permissions:
   issues: write
 
 jobs:
-  zerion:
-    uses: Siddharthgolecha/Zerion/.github/workflows/reusable-zerion.yml@v0.6.1
+  maestaris:
+    uses: Siddharthgolecha/Maestaris/.github/workflows/reusable-maestaris.yml@v0.6.1
     with:
-      zerion_ref: v0.6.1
+      maestaris_ref: v0.6.1

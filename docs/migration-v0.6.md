@@ -1,4 +1,4 @@
-# Migrating to Zerion v0.6 / protocol v4
+# Migrating to Maestaris v0.6 / protocol v4
 
 Protocol v4 separates **available work** from **worker ownership**.
 
@@ -48,8 +48,8 @@ For unclaimed backlog tasks:
 
 1. remove `worker: unassigned`;
 2. remove `status: ASSIGNED`;
-3. trigger the Zerion Issue workflow;
-4. confirm the derived label becomes `zerion:ready`.
+3. trigger the Maestaris Issue workflow;
+4. confirm the derived label becomes `maestaris:ready`.
 
 For already-claimed tasks, it is safe to remove the initial status field because the
 ACK comment preserves ownership. A real worker pin may remain.
@@ -59,7 +59,7 @@ do not emit it.
 
 ## Labels
 
-`zerion:assigned` is replaced by `zerion:ready`.
+`maestaris:assigned` is replaced by `maestaris:ready`.
 
 Other derived labels are unchanged.
 
@@ -74,6 +74,6 @@ then post ACK as that worker.
 Run:
 
 ```bash
-zerion validate
+maestaris validate
 python -m unittest discover -s tests -v
 ```

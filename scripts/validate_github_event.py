@@ -9,10 +9,10 @@ import sys
 import yaml
 
 RUNTIME_ROOT = Path(__file__).resolve().parents[1]
-PROJECT_ROOT = Path(os.environ.get("ZERION_PROJECT_ROOT", str(RUNTIME_ROOT))).resolve()
+PROJECT_ROOT = Path(os.environ.get("MAESTARIS_PROJECT_ROOT", str(RUNTIME_ROOT))).resolve()
 sys.path.insert(0, str(RUNTIME_ROOT))
 
-from zerion_orchestration.protocol import (
+from maestaris_orchestration.protocol import (
     validate_protocol_comment,
     validate_task_issue,
 )
@@ -26,7 +26,7 @@ def main() -> int:
 
     event = json.loads(Path(event_path).read_text(encoding="utf-8"))
     registry = yaml.safe_load(
-        (PROJECT_ROOT / "coordination" / "zerion.yaml").read_text()
+        (PROJECT_ROOT / "coordination" / "maestaris.yaml").read_text()
     )
     github = registry["github"]
 
@@ -51,12 +51,12 @@ def main() -> int:
         errors.extend(validate_protocol_comment(comment_body))
 
     if errors:
-        print("Zerion GitHub protocol validation FAILED")
+        print("Maestaris GitHub protocol validation FAILED")
         for error in errors:
             print(f"- {error}")
         return 1
 
-    print("Zerion GitHub protocol validation OK")
+    print("Maestaris GitHub protocol validation OK")
     return 0
 
 

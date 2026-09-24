@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 import unittest
 
-from zerion_orchestration.worker_leases import active_worker_lease, recovery_state, retry_count
+from maestaris_orchestration.worker_leases import active_worker_lease, recovery_state, retry_count
 
 
 def ack(worker="w1", dispatcher="d1", at="2026-09-23T10:00:00Z", hours="1", attempt="1", status="ACK"):

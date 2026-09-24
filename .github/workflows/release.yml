@@ -1,8 +1,8 @@
-name: Release Zerion
+name: Release Maestaris
 
 on:
   workflow_run:
-    workflows: ["Validate Zerion"]
+    workflows: ["Validate Maestaris"]
     types: [completed]
 
 permissions:

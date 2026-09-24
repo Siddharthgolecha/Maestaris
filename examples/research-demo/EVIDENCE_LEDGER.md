@@ -7,4 +7,4 @@
 ## Promotion rule
 
 The claim may be promoted only after the criteria, prototype evidence, and audit are
-durably available. Completing a Zerion task is not sufficient by itself.
+durably available. Completing a Maestaris task is not sufficient by itself.
