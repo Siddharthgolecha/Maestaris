@@ -1,0 +1,12 @@
+schema: 1
+agent: maestaris-worker-b
+project: maestaris
+role: implementation-research-and-testing
+dispatcher_pool: B
+status: active
+
+control_plane:
+  transport: github_issue
+
+project_paths:
+  - .
