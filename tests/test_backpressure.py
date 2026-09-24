@@ -18,6 +18,22 @@ class DispatcherBackpressureTests(unittest.TestCase):
         self.assertEqual(decision["reason"], "pending-review-limit")
         self.assertEqual(decision["pending"], ("A",))
 
+    def test_spare_review_capacity_allows_new_work(self):
+        histories = {"A": [worker("NEEDS_REVIEW")]}
+        decision = dispatcher_admission(histories, "D", 2)
+        self.assertTrue(decision["allow_new"])
+        self.assertEqual(decision["pending"], ("A",))
+        self.assertEqual(decision["reason"], "capacity-available")
+
+        full = {
+            "A": [worker("NEEDS_REVIEW")],
+            "B": [worker("DONE", worker="two")],
+        }
+        decision = dispatcher_admission(full, "D", 2)
+        self.assertFalse(decision["allow_new"])
+        self.assertEqual(decision["reason"], "pending-review-limit")
+        self.assertEqual(decision["pending"], ("A", "B"))
+
     def test_revise_routes_dispatcher_back_to_same_task(self):
         decision = dispatcher_admission({"A": [worker("NEEDS_REVIEW"), review("REVISE")]}, "D", 1)
         self.assertFalse(decision["allow_new"])
