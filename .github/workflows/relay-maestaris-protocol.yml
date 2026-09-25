@@ -33,5 +33,7 @@ jobs:
             exit 0
           fi
           for file in "${files[@]}"; do
+            issue_number="$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["issue_number"])' "$file")"
             python scripts/relay_issue_event.py "$file"
+            MAESTARIS_ISSUE_NUMBER="$issue_number" python scripts/sync_github_issue.py
           done

@@ -7,6 +7,7 @@ from typing import Iterable
 
 TASK_TITLE_PREFIX = "[Maestaris task]"
 WORKER_TERMINAL = {"DONE", "BLOCKED", "NEEDS_REVIEW"}
+WORKER_PROGRESS = {"CHECKPOINT"}
 REVIEW_STATES = {"ACCEPTED", "REVISE", "REJECTED"}
 LEGACY_TASK_STATUSES = {"ASSIGNED"}
 OPTIONAL_TASK_STATUSES = {"READY"} | LEGACY_TASK_STATUSES
@@ -108,11 +109,16 @@ def validate_protocol_comment(body: str) -> list[str]:
                 errors.append("RENEW claimed_at must be an ISO timestamp")
             if status == "RENEW" and fields.get("lease_hours") and _parse_positive_finite_hours(fields["lease_hours"]) is None:
                 errors.append("RENEW lease_hours must be a positive finite number")
+        elif status in WORKER_PROGRESS:
+            durable_keys = ("commit", "checkpoint_id", "artifact", "artifacts", "pr")
+            if not any(fields.get(key) for key in durable_keys):
+                errors.append("CHECKPOINT must reference durable progress via commit, checkpoint_id, artifact(s), or pr")
         elif status in WORKER_TERMINAL:
-            if "summary" not in fields and "## Summary" not in body:
-                errors.append(f"{status} event must include summary")
+            narrative = body.split("\n\n", 1)[1].strip() if "\n\n" in body else ""
+            if not fields.get("summary") and "## Summary" not in body and not narrative:
+                errors.append(f"{status} event must include summary or a substantive narrative")
         else:
-            errors.append("worker status must be ACK, RENEW, DONE, BLOCKED, or NEEDS_REVIEW")
+            errors.append("worker status must be ACK, RENEW, CHECKPOINT, DONE, BLOCKED, or NEEDS_REVIEW")
         return errors
     if body.startswith("[ORCHESTRATOR-CLAIM:v1]"):
         errors = []

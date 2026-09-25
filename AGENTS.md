@@ -251,7 +251,11 @@ For repository-changing work:
 3. link it to the task Issue;
 4. use a closing keyword such as `Resolves #123` when merge should complete the task.
 
-Draft PRs exist to expose work in progress and evidence. They are **not** mailbox/event triggers for ChatGPT.
+Draft PRs exist to expose work in progress and evidence. They are **not** mailbox/event triggers for ChatGPT. If a scheduled runtime refuses only PR creation while its canonical ACK is valid and task-branch writes remain available, that refusal is runtime transport evidence rather than a task-scientific blocker: the worker may continue bounded durable branch work, record a non-terminal CHECKPOINT with a durable reference, and retry PR creation before terminal review. A linked PR is still required before NEEDS_REVIEW.
+
+### Progress checkpoint
+
+A worker may post `status: CHECKPOINT` to record non-terminal durable progress. A CHECKPOINT must reference a durable commit, PR, checkpoint identifier, or artifact. It never establishes ownership, releases an ACK lease, changes derived task status, or substitutes for terminal evidence.
 
 ### Terminal worker report
 
@@ -261,7 +265,7 @@ Post one of:
 - `BLOCKED`
 - `NEEDS_REVIEW`
 
-on the task Issue with exact durable evidence.
+on the task Issue with exact durable evidence. A terminal event must include an explicit `summary:` / `## Summary` or a substantive narrative after the protocol fields.
 
 Before a dispatcher claims another task, count its terminal worker reports that do not
 yet have a later orchestrator review. If that count is at or above

@@ -123,13 +123,25 @@ def main() -> int:
     event_path = os.environ.get("GITHUB_EVENT_PATH")
     repo = os.environ.get("GITHUB_REPOSITORY")
     token = os.environ.get("GITHUB_TOKEN")
+    explicit_issue_number = os.environ.get("MAESTARIS_ISSUE_NUMBER")
 
-    if not event_path or not repo or not token:
-        print("GitHub event/repository/token is unavailable; skipping sync.")
+    if not repo or not token:
+        print("GitHub repository/token is unavailable; skipping sync.")
         return 0
 
-    event = json.loads(Path(event_path).read_text(encoding="utf-8"))
+    event = (
+        json.loads(Path(event_path).read_text(encoding="utf-8"))
+        if event_path and Path(event_path).exists()
+        else {}
+    )
     issue = event.get("issue") or {}
+    api = GitHubAPI(repo, token)
+    if not issue and explicit_issue_number:
+        issue = api.call("GET", f"/repos/{repo}/issues/{int(explicit_issue_number)}") or {}
+    if not issue:
+        print("No Issue context is available; skipping sync.")
+        return 0
+
     title = issue.get("title") or ""
     body = issue.get("body") or ""
 
@@ -144,7 +156,6 @@ def main() -> int:
         return 0
 
     number = int(issue["number"])
-    api = GitHubAPI(repo, token)
     comments = api.comments(number)
     comment_bodies = [str(item.get("body") or "") for item in comments]
 
