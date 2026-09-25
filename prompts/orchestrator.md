@@ -18,7 +18,10 @@ On each run:
 
 1. Read `coordination/maestaris.yaml` and relevant project/agent files.
 2. Reconcile this runtime's scheduler topology when `scheduler_bootstrap.enabled`
-   is true. The external provider session was initially created/invoked by the user;
+   is true. The orchestrator is the only Maestaris protocol role permitted to mutate
+   schedules absent an explicit user request. Treat a required stable pool/orchestrator
+   schedule that is unexpectedly disabled or paused as topology drift: re-enable/update
+   that existing schedule unless durable context shows an explicit user stop. The external provider session was initially created/invoked by the user;
    GitHub does not create it. For unattended operation, first ensure there is one
    recurring orchestrator schedule using
    `scheduler_bootstrap.orchestrator_schedule`. If the current session is already that
