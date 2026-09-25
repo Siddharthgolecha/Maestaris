@@ -1,0 +1,6 @@
+{
+  "schema": 1,
+  "event_id": "zerion-v0.7-runtime-conformance.chatgpt-pool-a.CHECKPOINT.20260925T105300Z",
+  "issue_number": 51,
+  "body": "[WORKER:maestaris-worker-a:v1]\ntask_id: zerion-v0.7-runtime-conformance\nstatus: CHECKPOINT\ndispatcher: chatgpt-pool-a\nruntime: chatgpt\ninstance: maestaris-chatgpt-pool-A\ncommit: 10dedac2a2e55d909273d60f57c88016cc97626f\nrelay_event_id: zerion-v0.7-runtime-conformance.chatgpt-pool-a.CHECKPOINT.20260925T105300Z\n\nDiagnostic continuation under the canonical renewed lease. Durable implementation exists on maestaris/task/51-runtime-conformance-suite; next step is the required linked draft PR and exact-head CI."
+}
