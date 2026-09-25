@@ -1,0 +1,6 @@
+{
+  "schema": 1,
+  "event_id": "zerion-v0.7-checkpoint-resume.chatgpt-pool-b.ACK.20260925T044600Z",
+  "issue_number": 45,
+  "body": "[WORKER:maestaris-worker-b:v1]\ntask_id: zerion-v0.7-checkpoint-resume\nstatus: ACK\ndispatcher: chatgpt-pool-b\nruntime: chatgpt\ninstance: maestaris-chatgpt-pool-B\nclaimed_at: 2026-09-25T04:46:00Z\nlease_hours: 3\nrelay_event_id: zerion-v0.7-checkpoint-resume.chatgpt-pool-b.ACK.20260925T044600Z\n\nClaiming eligible #45 after direct Issue-comment write refusal. The relay request is transport-only; ownership is effective only after this ACK appears in canonical Issue history."
+}
