@@ -1,0 +1,37 @@
+name: Relay Maestaris protocol comments
+
+on:
+  push:
+    branches:
+      - 'maestaris/control/**'
+    paths:
+      - '.maestaris/outbox/*.json'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  relay:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -e .
+      - name: Relay newly added protocol events
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          mapfile -t files < <(git show --pretty="" --name-only --diff-filter=A "$GITHUB_SHA" -- '.maestaris/outbox/*.json')
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No newly added relay requests."
+            exit 0
+          fi
+          for file in "${files[@]}"; do
+            python scripts/relay_issue_event.py "$file"
+          done
