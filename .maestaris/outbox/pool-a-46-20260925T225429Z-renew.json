@@ -1,0 +1,6 @@
+{
+  "schema": 1,
+  "event_id": "pool-a-46-20260925T225429Z-renew",
+  "issue_number": 46,
+  "body": "[WORKER:maestaris-worker-a:v1]\ntask_id: zerion-v0.7-lifecycle-telemetry\nstatus: RENEW\ndispatcher: chatgpt-pool-a\nruntime: chatgpt\ninstance: maestaris-chatgpt-pool-A\nclaimed_at: 2026-09-25T22:54:29Z\nlease_hours: 3\nrelay_event_id: pool-a-46-20260925T225429Z-renew\n\nRenewing the pinned Issue #46 lease to complete the bounded lifecycle-telemetry verification and terminal review gate."
+}
