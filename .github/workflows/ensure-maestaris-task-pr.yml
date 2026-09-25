@@ -1,0 +1,58 @@
+name: Ensure Maestaris task draft PR
+
+on:
+  push:
+    branches:
+      - 'maestaris/task/**'
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: write
+
+jobs:
+  ensure-draft-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Ensure linked draft PR exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ ! "$BRANCH" =~ ^maestaris/task/([0-9]+)-.+$ ]]; then
+            echo "Not a canonical Maestaris task branch; skipping."
+            exit 0
+          fi
+          ISSUE="${BASH_REMATCH[1]}"
+
+          issue_json="$(gh api "repos/$REPO/issues/$ISSUE")"
+          issue_title="$(jq -r '.title // ""' <<<"$issue_json")"
+          issue_state="$(jq -r '.state // ""' <<<"$issue_json")"
+          if [[ "$issue_state" != "open" || "$issue_title" != "[Maestaris task]"* ]]; then
+            echo "Branch does not map to an open Maestaris task Issue; skipping."
+            exit 0
+          fi
+
+          if [[ "$(git rev-list --count origin/main..HEAD)" -eq 0 ]]; then
+            echo "Task branch has no commits beyond main; skipping."
+            exit 0
+          fi
+
+          owner="${REPO%%/*}"
+          existing="$(
+            gh api --method GET "repos/$REPO/pulls"               -f state=open               -f head="$owner:$BRANCH"               -f base=main               -F per_page=100               --jq '.[0].number // empty'
+          )"
+          if [[ -n "$existing" ]]; then
+            echo "Open PR #$existing already exists; nothing to do."
+            exit 0
+          fi
+
+          body="$(printf 'Resolves #%s\n\nAutomatically opened as a draft by the Maestaris task-branch fallback after durable branch progress.' "$ISSUE")"
+          gh api --method POST "repos/$REPO/pulls"             -f title="$issue_title"             -f head="$BRANCH"             -f base=main             -f body="$body"             -F draft=true             --jq '"Created draft PR #\(.number): \(.html_url)"'
