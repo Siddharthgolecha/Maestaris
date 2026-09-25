@@ -83,6 +83,13 @@ scheduler_bootstrap:
       chatgpt: 7
       gemini-spark: 22
 
+protocol_comment_relay:
+  enabled: true
+  control_branch_template: "maestaris/control/{instance}"
+  outbox_path: ".maestaris/outbox"
+  workflow: "relay-maestaris-protocol.yml"
+  direct_comment_preferred: true
+
 projects:
   - maestaris
   - example-project

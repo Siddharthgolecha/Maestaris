@@ -21,6 +21,14 @@ There is intentionally **no mutable worker-state YAML** in protocol v4.
 
 GitHub task Issues and their comments are the live control plane.
 
+When an AI-provider connector can still write repository contents but intermittently
+refuses Issue-comment mutations, Maestaris may use the configured protocol-comment
+relay. The role writes a validated event request to its dedicated
+`maestaris/control/<instance>` branch; a GitHub Action posts the canonical Issue
+comment with `GITHUB_TOKEN`. The outbox file is transport evidence only and never
+establishes ownership, terminal state, or review state by itself. The role must reread
+the Issue and wait for the canonical comment before relying on the event.
+
 Labels and GitHub Projects are derived views. If a label or Project field disagrees with the Issue history, the Issue history wins.
 
 Chat memory and remembered summaries are advisory only.
@@ -143,9 +151,11 @@ On orchestrator startup:
 Every recurring Maestaris role — orchestrator, worker dispatcher, or auditor — must never
 disable, pause, or delete its own recurring schedule because one task/review is blocked
 or because one invocation encounters a connector, tool-auth, provider, or write failure.
-Such failures end at most the affected candidate or current poll. The next scheduled
-poll retries from canonical GitHub state. Only explicit user intent or canonical
-topology reconciliation may remove or disable a recurring Maestaris schedule.
+Such failures end at most the affected candidate or current poll. When the configured
+protocol-comment relay is available, a refused canonical comment should use that relay
+before giving up the poll. The next scheduled poll retries from canonical GitHub state.
+Only explicit user intent or canonical topology reconciliation may remove or disable a
+recurring Maestaris schedule.
 
 Live schedule objects remain provider-owned runtime state; GitHub stores only the
 desired topology, instructions, and all durable task/evidence state. Never claim that
