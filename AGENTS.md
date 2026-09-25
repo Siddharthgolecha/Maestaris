@@ -213,10 +213,11 @@ Before substantive work:
    - ACCEPTED -> accepted;
    - REVISE -> revise;
    - REJECTED -> rejected.
-8. Check for an unexpired ACK owned by another dispatcher and unmet dependencies.
-9. Read relevant project `canonical_paths`.
-10. Inspect linked PRs/checks/artifacts before extending or accepting a result.
-11. Only then act.
+8. Before selecting new work, if this dispatcher owns an unexpired ACK/RENEW lease, resume that task first. Never resume another dispatcher's active lease; a terminal worker report or lease expiry removes it from the owned-resume set.
+9. Check for an unexpired ACK owned by another dispatcher and unmet dependencies.
+10. Read relevant project `canonical_paths`.
+11. Inspect linked PRs/checks/artifacts before extending or accepting a result.
+12. Only then act.
 
 If labels lag the Issue history, trust the history.
 
