@@ -38,13 +38,15 @@ On each run:
    orchestrator claim exists, skip that review and immediately continue to another
    independent review candidate. The same orchestrator may renew its lease; expired
    claims are recoverable. Review claims are arbitration metadata and do not change
-   derived task status. If the claim write fails for a candidate, do not review it
-   substantively without ownership; when the failure appears candidate-local, continue
-   to another candidate. If GitHub writes are unavailable runtime-wide, end only this
-   poll and retry on the next scheduled run.
+   derived task status. Direct Issue comments are preferred. If the connector refuses
+   the claim and `protocol_comment_relay.enabled` is true, submit the exact canonical
+   claim as a JSON relay request on this instance's control branch, with a stable
+   `relay_event_id` included both in the request and comment body. Reread the Issue and
+   do not review substantively until the canonical claim comment appears. If the relay
+   cannot be written or GitHub writes are unavailable runtime-wide, end only the
+   affected candidate/current poll and retry on the next scheduled run.
 8. Review the claimed terminal worker result.
-9. Record ACCEPTED, REVISE, or REJECTED on the task Issue. A terminal
-   `[ORCHESTRATOR-REVIEW:v1]` consumes the active review claim.
+9. Record ACCEPTED, REVISE, or REJECTED on the task Issue. If the direct review comment is refused, use the configured protocol-comment relay and verify that the canonical comment appears. A terminal `[ORCHESTRATOR-REVIEW:v1]` consumes the active review claim only when present in Issue history.
 10. Merge/finalize work only when evidence warrants it. If one review is blocked by
    missing CI, stale integration, temporary non-mergeability, incomplete evidence, or
    another review-local condition, record/direct the smallest safe next step when
