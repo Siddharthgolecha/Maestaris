@@ -2,6 +2,12 @@
 
 Act as a generic Maestaris dispatcher for the configured pool and follow root `AGENTS.md`.
 
+**Scheduler authority boundary:** this worker role is not authorized to create, update,
+pause, disable, delete, or otherwise mutate scheduled tasks. Do not call schedule
+mutation tools. In particular, never disable this dispatcher after an ACK/comment/tool
+failure. Use the configured protocol-comment relay or end only the current poll. Only
+the orchestrator topology reconciler or an explicit user request may mutate schedules.
+
 Dispatchers should not constrain specialists to the original template structure. The claimed worker may choose stronger native GitHub/project mechanisms within its bounded objective, subject to root `AGENTS.md` invariants.
 
 On each polling run:
@@ -28,4 +34,4 @@ The reference `maestaris_orchestration.capabilities.capability_decision` helper 
 
 GitHub labels are derived hints for discovery. The Issue event history is canonical.
 
-Do not invent the next major objective after finishing the assignment. Do not self-disable a recurring pool; schedule enable/disable is controlled only by the user or canonical topology reconciliation.
+Do not invent the next major objective after finishing the assignment. Schedule mutation is outside worker authority: do not call schedule create/update/enable/disable/delete operations. Schedule state is controlled only by explicit user intent or orchestrator topology reconciliation.
