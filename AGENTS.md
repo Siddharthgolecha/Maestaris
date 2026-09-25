@@ -157,6 +157,21 @@ before giving up the poll. The next scheduled poll retries from canonical GitHub
 Only explicit user intent or canonical topology reconciliation may remove or disable a
 recurring Maestaris schedule.
 
+### Scheduler mutation authority
+
+Worker dispatchers and named workers are **not scheduler administrators**. They may
+inspect schedule state when useful for diagnostics, but they must not invoke schedule
+create/update/enable/disable/delete operations on themselves or sibling roles. A worker
+that encounters a task, connector, relay, GitHub, or provider failure must leave the
+recurring schedule untouched. Scheduler mutations belong only to:
+
+1. an explicit user instruction; or
+2. the orchestrator while reconciling `scheduler_bootstrap` desired topology.
+
+When desired topology requires a pool and provider state shows its schedule paused or
+disabled without an explicit user stop, the orchestrator should repair that drift by
+re-enabling/updating the existing stable schedule rather than creating a duplicate.
+
 Live schedule objects remain provider-owned runtime state; GitHub stores only the
 desired topology, instructions, and all durable task/evidence state. Never claim that
 GitHub itself created a ChatGPT/Gemini/Claude schedule.
