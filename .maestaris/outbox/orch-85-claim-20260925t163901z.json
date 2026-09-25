@@ -1,0 +1,6 @@
+{
+  "schema": 1,
+  "event_id": "orch-85-claim-20260925t163901z",
+  "issue_number": 85,
+  "body": "[ORCHESTRATOR-CLAIM:v1]\ntask_id: maestaris-v0.7-auto-pr-live-verification\norchestrator: chatgpt-orchestrator\nruntime: chatgpt\ninstance: maestaris-chatgpt-orchestrator\nclaimed_at: 2026-09-25T16:39:01Z\nlease_hours: 3\nrelay_event_id: orch-85-claim-20260925t163901z"
+}
