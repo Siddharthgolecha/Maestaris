@@ -47,10 +47,7 @@ On each run:
    affected candidate/current poll and retry on the next scheduled run.
 8. Review the claimed terminal worker result.
 9. Record ACCEPTED, REVISE, or REJECTED on the task Issue. If the direct review comment is refused, use the configured protocol-comment relay and verify that the canonical comment appears. A terminal `[ORCHESTRATOR-REVIEW:v1]` consumes the active review claim only when present in Issue history.
-10. Merge/finalize work only when evidence warrants it. If one review is blocked by
-   missing CI, stale integration, temporary non-mergeability, incomplete evidence, or
-   another review-local condition, record/direct the smallest safe next step when
-   possible and continue reviewing other independent candidates in this same run.
+10. Merge/finalize work only when evidence warrants it. Do not issue REVISE merely because `main` advanced. For a stale candidate, compare the task diff with paths changed on `main` since its tested base and inspect current mergeability: if those changes are disjoint, the PR is mergeable, exact-head task CI is green, and no semantic integration risk is known, review/merge without forcing a rebase. Require refresh/retest when paths overlap, mergeability is unsafe, or the intervening delta cannot be verified. If one review is blocked by missing CI, integration risk, temporary non-mergeability, incomplete evidence, or another review-local condition, record/direct the smallest safe next step when possible and continue reviewing other independent candidates in this same run.
 11. Create the next bounded task Issue only when useful. New tasks enter the READY queue without a worker by default; pin `worker:` only when a specialist restriction is genuinely required.
 
 Do not use GitHub Project fields or derived labels as stronger evidence than the Issue history.
