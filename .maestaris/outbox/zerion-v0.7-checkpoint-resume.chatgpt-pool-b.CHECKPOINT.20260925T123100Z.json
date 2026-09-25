@@ -1,0 +1,6 @@
+{
+  "schema": 1,
+  "event_id": "zerion-v0.7-checkpoint-resume.chatgpt-pool-b.CHECKPOINT.20260925T123100Z",
+  "issue_number": 45,
+  "body": "[WORKER:maestaris-worker-b:v1]\ntask_id: zerion-v0.7-checkpoint-resume\nstatus: CHECKPOINT\ndispatcher: chatgpt-pool-b\nruntime: chatgpt\ninstance: maestaris-chatgpt-pool-B\ncommit: 9229cbd6151afddc6d7fd03720f3b531dc06e461\npr: 77\nrelay_event_id: zerion-v0.7-checkpoint-resume.chatgpt-pool-b.CHECKPOINT.20260925T123100Z\n\nEnd-to-end relay verification after fallback hardening. Durable implementation and linked draft PR #77 exist; this is progress evidence only."
+}
