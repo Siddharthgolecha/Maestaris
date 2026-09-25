@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 import unittest
 
-from maestaris_orchestration.worker_leases import active_worker_lease, recovery_state, retry_count
+from maestaris_orchestration.worker_leases import active_worker_lease, owned_active_task_ids, recovery_state, retry_count
 
 
 def ack(worker="w1", dispatcher="d1", at="2026-09-23T10:00:00Z", hours="1", attempt="1", status="ACK"):
@@ -60,6 +60,30 @@ summary: complete
         now = datetime(2026, 9, 23, 10, 30, tzinfo=timezone.utc)
         self.assertIsNone(active_worker_lease([ack(at="2026-09-23T12:00:00Z")], now))
         self.assertIsNone(active_worker_lease([ack(hours="nan")], now))
+
+    def test_owned_active_tasks_resume_only_current_dispatcher(self):
+        now = datetime(2026, 9, 23, 10, 30, tzinfo=timezone.utc)
+        terminal = """[WORKER:w1:v1]
+task_id: t1
+status: NEEDS_REVIEW
+summary: complete
+"""
+        histories = {
+            "owned-b": [ack(dispatcher="pool-a")],
+            "other": [ack(dispatcher="pool-b")],
+            "terminal": [ack(dispatcher="pool-a"), terminal],
+            "expired": [ack(dispatcher="pool-a", at="2026-09-23T08:00:00Z", hours="1")],
+            "owned-a": [ack(worker="w2", dispatcher="pool-a", at="2026-09-23T10:05:00Z")],
+        }
+        self.assertEqual(
+            owned_active_task_ids(histories, dispatcher="pool-a", now=now),
+            ("owned-a", "owned-b"),
+        )
+
+    def test_owned_active_tasks_do_not_transfer_another_dispatchers_lease(self):
+        now = datetime(2026, 9, 23, 10, 30, tzinfo=timezone.utc)
+        histories = {"task": [ack(dispatcher="pool-b")]}
+        self.assertEqual(owned_active_task_ids(histories, dispatcher="pool-a", now=now), ())
 
     def test_retry_budget_quarantines_without_erasing_history(self):
         comments = [
