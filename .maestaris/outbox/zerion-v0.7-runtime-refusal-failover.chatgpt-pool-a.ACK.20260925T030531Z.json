@@ -1,0 +1,6 @@
+{
+  "schema": 1,
+  "event_id": "zerion-v0.7-runtime-refusal-failover.chatgpt-pool-a.ACK.20260925T030531Z",
+  "issue_number": 48,
+  "body": "[WORKER:maestaris-worker-a:v1]\ntask_id: zerion-v0.7-runtime-refusal-failover\nstatus: ACK\ndispatcher: chatgpt-pool-a\nruntime: chatgpt\ninstance: maestaris-chatgpt-pool-A\nclaimed_at: 2026-09-25T03:05:31Z\nlease_hours: 3\nrelay_event_id: zerion-v0.7-runtime-refusal-failover.chatgpt-pool-a.ACK.20260925T030531Z\n\nResuming the outstanding REVISE task after the direct GitHub comment path was refused. Ownership is effective only once this relayed ACK appears in canonical Issue history."
+}
