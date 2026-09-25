@@ -1,0 +1,6 @@
+{
+  "schema": 1,
+  "event_id": "pool-a-46-20260925T205000Z-checkpoint",
+  "issue_number": 46,
+  "body": "[WORKER:maestaris-worker-a:v1]\ntask_id: zerion-v0.7-lifecycle-telemetry\nstatus: CHECKPOINT\ndispatcher: chatgpt-pool-a\nruntime: chatgpt\ninstance: maestaris-chatgpt-pool-A\nrelay_event_id: pool-a-46-20260925T205000Z-checkpoint\n\nPR #88 head 3a75502706b961fed151eb7a4c8aefc1add7c20b has green exact-head Validate Maestaris run 36176383988. Terminal gate remains open because explicit telemetry state-invariance tests are still missing; the scoped test-file write was refused by the scheduled GitHub write boundary."
+}
