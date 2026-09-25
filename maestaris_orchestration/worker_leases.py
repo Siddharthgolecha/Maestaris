@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 import math
-from typing import Iterable
+from typing import Iterable, Mapping
 
 from .protocol import protocol_fields, worker_from_event
 
@@ -113,6 +113,27 @@ def active_worker_lease(
     if active is None or active.expires_at <= now:
         return None
     return active
+
+
+def owned_active_task_ids(
+    histories: Mapping[str, Iterable[str]],
+    *,
+    dispatcher: str,
+    now: datetime | None = None,
+) -> tuple[str, ...]:
+    """Return deterministic task IDs currently owned by one dispatcher.
+
+    This is a continuation primitive, not a claiming primitive. It never transfers
+    ownership: only tasks whose authoritative active lease already names the supplied
+    dispatcher are returned. Terminal and expired histories naturally disappear
+    because active_worker_lease returns None for them.
+    """
+    owned: list[str] = []
+    for task_id, comments in histories.items():
+        lease = active_worker_lease(comments, now=now)
+        if lease is not None and lease.dispatcher == dispatcher:
+            owned.append(str(task_id))
+    return tuple(sorted(owned))
 
 
 def retry_count(comments: Iterable[str]) -> int:
