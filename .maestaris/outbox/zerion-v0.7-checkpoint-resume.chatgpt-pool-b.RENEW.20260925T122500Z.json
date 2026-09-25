@@ -1,0 +1,6 @@
+{
+  "schema": 1,
+  "event_id": "zerion-v0.7-checkpoint-resume.chatgpt-pool-b.RENEW.20260925T122500Z",
+  "issue_number": 45,
+  "body": "[WORKER:maestaris-worker-b:v1]\ntask_id: zerion-v0.7-checkpoint-resume\nstatus: RENEW\ndispatcher: chatgpt-pool-b\nruntime: chatgpt\ninstance: maestaris-chatgpt-pool-B\nclaimed_at: 2026-09-25T12:25:00Z\nlease_hours: 3\nrelay_event_id: zerion-v0.7-checkpoint-resume.chatgpt-pool-b.RENEW.20260925T122500Z\n\nRenewing ownership of #45 before completing exact-head verification on PR #77."
+}
