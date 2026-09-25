@@ -39,3 +39,17 @@ GitHub events can trigger Actions that validate protocol records, sync labels, r
 They do not directly wake the scheduled/ordinary ChatGPT conversation.
 
 When the user is present, the same worker chat can be invoked immediately instead of waiting for its next scheduled poll.
+
+## Draft-PR fallback for scheduled runtimes
+
+A scheduled runtime may occasionally retain repository-content writes while its direct
+pull-request mutation is refused. Once the worker has a canonical ACK, it may continue
+bounded durable work on its canonical `maestaris/task/<issue>-<slug>` branch.
+
+Maestaris also ships a GitHub-native fallback on pushes to canonical task branches.
+When the branch maps to an open Maestaris task Issue, has commits beyond `main`, and
+does not already have an open PR, GitHub Actions opens a **draft** PR to `main` with
+`Resolves #<issue>`. This fallback changes no ownership or review state and never
+merges automatically. Workers must still satisfy the normal terminal-review gate before
+posting `NEEDS_REVIEW`.
+
