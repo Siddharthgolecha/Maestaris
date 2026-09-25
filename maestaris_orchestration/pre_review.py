@@ -23,6 +23,8 @@ def pre_review_decision(
     ci_success: bool = False,
     base_sha: str | None = None,
     current_main_sha: str | None = None,
+    main_changed_paths: Sequence[str] | None = None,
+    mergeable: bool | None = None,
     refresh_mechanical_safe: bool = False,
     semantic_conflict: bool = False,
 ) -> PreReviewDecision:
@@ -49,10 +51,19 @@ def pre_review_decision(
     if stale:
         if semantic_conflict:
             blockers.append("integration:semantic-conflict")
-        elif refresh_mechanical_safe:
-            blockers.append("integration:refresh-required")
-            needs_refresh = True
-        else:
+        elif mergeable is False:
+            blockers.append("integration:not-mergeable")
+        elif main_changed_paths is None:
             blockers.append("integration:stale-unverified")
+        else:
+            overlap = sorted(set(changed_paths).intersection(main_changed_paths))
+            if overlap:
+                if refresh_mechanical_safe:
+                    blockers.append("integration:refresh-required")
+                    needs_refresh = True
+                else:
+                    blockers.append("integration:overlap-unverified")
+            elif mergeable is not True:
+                blockers.append("integration:mergeability-unverified")
 
     return PreReviewDecision(not blockers, tuple(blockers), needs_refresh)

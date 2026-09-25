@@ -41,15 +41,57 @@ def test_stale_ci_cannot_claim_exact_head_success():
     assert "ci:not-exact-head" in decision.blockers
 
 
-def test_mechanically_refreshable_stale_branch_requires_refresh_before_review():
-    decision = terminal_review_gate(**base_evidence(base_sha="old-main", refresh_mechanical_safe=True))
+def test_disjoint_stale_main_change_does_not_force_refresh():
+    decision = terminal_review_gate(
+        **base_evidence(
+            base_sha="old-main",
+            main_changed_paths=["docs/unrelated.md", "README.md"],
+            mergeable=True,
+        )
+    )
+    assert decision.ready
+    assert not decision.needs_refresh
+    assert decision.blockers == ()
+
+
+def test_overlapping_stale_branch_requires_refresh_when_safe():
+    decision = terminal_review_gate(
+        **base_evidence(
+            base_sha="old-main",
+            main_changed_paths=["maestaris_orchestration/pre_review.py"],
+            mergeable=True,
+            refresh_mechanical_safe=True,
+        )
+    )
     assert not decision.ready
     assert decision.needs_refresh
     assert "integration:refresh-required" in decision.blockers
 
 
-def test_semantic_conflict_is_not_hidden_by_refresh():
-    decision = terminal_review_gate(**base_evidence(base_sha="old-main", refresh_mechanical_safe=True, semantic_conflict=True))
+def test_unknown_stale_delta_remains_fail_closed():
+    decision = terminal_review_gate(**base_evidence(base_sha="old-main", mergeable=True))
+    assert not decision.ready
+    assert "integration:stale-unverified" in decision.blockers
+
+
+def test_nonmergeable_stale_branch_is_blocked():
+    decision = terminal_review_gate(
+        **base_evidence(base_sha="old-main", main_changed_paths=[], mergeable=False)
+    )
+    assert not decision.ready
+    assert "integration:not-mergeable" in decision.blockers
+
+
+def test_semantic_conflict_is_not_hidden_by_disjoint_paths():
+    decision = terminal_review_gate(
+        **base_evidence(
+            base_sha="old-main",
+            main_changed_paths=["docs/unrelated.md"],
+            mergeable=True,
+            refresh_mechanical_safe=True,
+            semantic_conflict=True,
+        )
+    )
     assert not decision.ready
     assert not decision.needs_refresh
     assert "integration:semantic-conflict" in decision.blockers
