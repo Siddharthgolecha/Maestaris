@@ -310,6 +310,27 @@ def validate_repository(root: Path) -> ValidationResult:
         if not isinstance(pools, dict) or not pools:
             errors.append(f"{registry_path}: pools must be a non-empty mapping")
 
+        execution = registry.get("execution")
+        if execution is not None:
+            if not isinstance(execution, dict):
+                errors.append(f"{registry_path}: execution must be a mapping")
+            else:
+                if execution.get("default_mode") not in (
+                    None,
+                    "autonomous_if_write_capable",
+                ):
+                    errors.append(
+                        f"{registry_path}: execution.default_mode must be "
+                        "autonomous_if_write_capable"
+                    )
+                pinning = execution.get("pinning") or {}
+                if not isinstance(pinning, dict):
+                    errors.append(f"{registry_path}: execution.pinning must be a mapping")
+                elif pinning.get("mode") not in (None, "fallback"):
+                    errors.append(
+                        f"{registry_path}: execution.pinning.mode must be fallback"
+                    )
+
         bootstrap = registry.get("scheduler_bootstrap")
         if bootstrap is not None:
             if not isinstance(bootstrap, dict):
@@ -382,6 +403,33 @@ def validate_repository(root: Path) -> ValidationResult:
                             if not isinstance(minute, int) or not 0 <= minute <= 59:
                                 errors.append(
                                     f"{registry_path}: orchestrator schedule minute for "
+                                    f"{runtime_name} must be 0..59"
+                                )
+
+                review_schedule = bootstrap.get("review_schedule") or {}
+                if not isinstance(review_schedule, dict):
+                    errors.append(
+                        f"{registry_path}: scheduler_bootstrap.review_schedule "
+                        "must be a mapping"
+                    )
+                else:
+                    review_template = review_schedule.get("instance_template")
+                    if review_template and "{runtime}" not in str(review_template):
+                        errors.append(
+                            f"{registry_path}: review_schedule.instance_template "
+                            "must include {runtime}"
+                        )
+                    review_minutes = review_schedule.get("schedule_minutes") or {}
+                    if not isinstance(review_minutes, dict):
+                        errors.append(
+                            f"{registry_path}: review_schedule.schedule_minutes "
+                            "must be a mapping"
+                        )
+                    else:
+                        for runtime_name, minute in review_minutes.items():
+                            if not isinstance(minute, int) or not 0 <= minute <= 59:
+                                errors.append(
+                                    f"{registry_path}: review schedule minute for "
                                     f"{runtime_name} must be 0..59"
                                 )
 
