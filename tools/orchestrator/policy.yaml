@@ -1,0 +1,32 @@
+schema: 1
+
+routing:
+  upgrade_confidence: 0.65
+  downgrade_confidence: 0.90
+  long_context_chars: 20000
+
+hard_floors:
+  tool_or_network: small
+  write_or_code_or_science: standard
+  formal_proof_or_high_risk: frontier
+
+tool_selection:
+  minimum_confidence: 0.70
+  allowlist:
+    - read_issue
+    - read_pr
+    - read_file
+    - compare_commits
+    - run_verifier
+    - update_task_branch
+    - post_protocol_comment
+    - update_task_pr
+
+verification:
+  on_failure: escalate_one_tier
+  authority: deterministic_tests_ci_or_formal_verifier
+
+shadow_mode:
+  github_mutations: false
+  external_models_required: false
+  emit_route_json: true
