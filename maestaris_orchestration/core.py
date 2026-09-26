@@ -85,7 +85,7 @@ def build_registry() -> dict[str, Any]:
         "orchestrator": "orchestrator",
         "defaults": {
             "ack_lease_hours": 3,
-            "max_pending_reviews_per_dispatcher": 1,
+            "max_pending_reviews_per_dispatcher": 4,
         },
         "github": {
             "task_transport": "issue",
@@ -141,8 +141,23 @@ def build_registry() -> dict[str, Any]:
             },
         },
         "pools": {
-            "A": {"max_tasks_per_run": 1},
-            "B": {"max_tasks_per_run": 1},
+            "A": {"max_tasks_per_run": 2},
+            "B": {"max_tasks_per_run": 2},
+        },
+        "execution": {
+            "default_mode": "autonomous_if_write_capable",
+            "failure_scope": "candidate_local",
+            "pinning": {
+                "mode": "fallback",
+                "require_observed_capability_benefit": True,
+            },
+            "capabilities": {
+                "source": "current_invocation",
+                "provider_identity_is_not_capability": True,
+                "runtime_wide_write_denial_is_task_blocker": False,
+            },
+            "persistence": {"recurring_roles_stay_enabled": True},
+            "review": {"persistent_drain": True},
         },
         "scheduler_bootstrap": {
             "enabled": True,
@@ -160,6 +175,14 @@ def build_registry() -> dict[str, Any]:
                 "schedule_minutes": {
                     "chatgpt": 7,
                     "gemini-spark": 22,
+                },
+            },
+            "review_schedule": {
+                "enabled": True,
+                "instance_template": "maestaris-{runtime}-review",
+                "schedule_minutes": {
+                    "chatgpt": 12,
+                    "gemini-spark": 27,
                 },
             },
         },
