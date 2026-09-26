@@ -96,12 +96,12 @@ invokes that orchestrator in ChatGPT, Gemini Spark, Claude, or another runtime. 
 cannot create a provider-owned chat/task on its own. After that, the repository should
 carry everything needed for the orchestrator to configure the rest.
 
-When `scheduler_bootstrap.enabled` is true, an orchestrator should reconcile **two
-layers**: one recurring orchestrator schedule for its runtime, then the configured
-worker-pool dispatcher schedules. A provider that supports schedule management should
-create missing schedules, update drifted ones, and avoid duplicates by using stable
-instance names. A one-shot bootstrap chat is not enough for unattended operation
-because terminal worker results still require independent recurring review.
+When `scheduler_bootstrap.enabled` is true, an orchestrator should reconcile **three
+layers**: one recurring orchestrator schedule, the configured worker-pool dispatcher
+schedules, and one persistent review-drain schedule. A provider that supports schedule
+management should create missing schedules, update drifted ones, and avoid duplicates
+by using stable instance names. A one-shot bootstrap chat is not enough for unattended
+operation because execution and review both need persistent loops.
 
 For the default Maestaris topology:
 
@@ -112,7 +112,8 @@ Gemini Spark bootstrap session
   -> ensures maestaris-gemini-spark-orchestrator exists and recurs
   -> ensures maestaris-gemini-spark-pool-A exists
   -> ensures maestaris-gemini-spark-pool-B exists
-  -> keeps all three hourly and staggered
+  -> ensures maestaris-gemini-spark-review exists
+  -> keeps all four hourly and staggered
 ```
 
 This makes the user-facing bootstrap:
@@ -128,7 +129,8 @@ prompt: "Use Maestaris on OWNER/REPO as orchestrator."
       +--> discovers pools / cadence / identities / protocol
       +--> creates or reconciles a recurring orchestrator schedule
       +--> creates or reconciles provider-owned worker schedules
-      +--> orchestrator reviews terminal results; workers service READY queue
+      +--> creates or reconciles a persistent review-drain schedule
+      +--> workers service READY queue; reviewer drains terminal results
 ```
 
 GitHub is the bootstrap memory and desired-state source; the provider remains the
@@ -149,28 +151,32 @@ of record.
 
 On startup, inspect scheduler_bootstrap and the configured pools. Because Gemini Spark
 supports conversational schedule management, ensure there is one recurring Spark
-orchestrator schedule plus one recurring worker-dispatcher schedule for every configured
-Maestaris pool. If this task is already the recurring orchestrator schedule, do not create
-a duplicate.
+orchestrator schedule, one recurring worker-dispatcher schedule for every configured
+Maestaris pool, and one recurring review-drain schedule. If this task is already the
+recurring orchestrator schedule, do not create a duplicate.
 
 Use stable schedule/instance names from the configured templates. For the default
 configuration create/reconcile:
 - maestaris-gemini-spark-orchestrator, hourly, using the configured orchestrator minute;
 - maestaris-gemini-spark-pool-A, hourly, using the configured Pool A minute hint;
-- maestaris-gemini-spark-pool-B, hourly, using the configured Pool B minute hint.
+- maestaris-gemini-spark-pool-B, hourly, using the configured Pool B minute hint;
+- maestaris-gemini-spark-review, hourly, using the configured review minute.
 
 Do not create duplicates. If a matching schedule exists, inspect and update it instead.
 Each generated worker schedule must read AGENTS.md on every run, poll the shared READY
-queue, respect dependencies and unexpired ACK leases, claim at most one task, and use
-its stable dispatcher/runtime/instance identity in the ACK.
+queue, respect dependencies and unexpired ACK leases, claim no more than its configured
+`max_tasks_per_run` productive allowance, and use its stable
+dispatcher/runtime/instance identity in the ACK. The reviewer remains enabled and drains
+independent terminal results rather than waiting for a per-review schedule pin.
 
-After reconciling worker schedules, perform the normal Maestaris orchestrator duties:
-review unreviewed terminal results, inspect actual PR/check/artifact evidence, post
-ACCEPTED/REVISE/REJECTED, merge only when warranted, and create bounded READY work
-only when useful.
+After reconciling execution and review schedules, perform the normal Maestaris
+orchestrator duties: maintain dependency/priority state, route around runtime capability
+gaps, and create bounded READY work only when useful. The persistent reviewer inspects
+actual PR/check/artifact evidence and posts ACCEPTED/REVISE/REJECTED or merges when
+warranted.
 
-Reconcile the worker schedules again on future orchestrator runs so missing, paused,
-or drifted dispatcher schedules are repaired when safe.
+Reconcile worker and review schedules again on future orchestrator runs so missing,
+paused, or drifted recurring roles are repaired when safe.
 ```
 
 Gemini Spark supports creating and editing schedules conversationally, so the
@@ -196,9 +202,10 @@ dispatcher: gemini-spark-pool-a
 runtime: gemini-spark
 instance: <stable name for this Spark schedule>
 
-Execute at most one bounded task per run. Use a separate branch/PR for repository
-changes. Verify the result and post DONE, BLOCKED, or NEEDS_REVIEW with durable
-evidence. If no eligible task exists, do nothing.
+Execute up to the configured productive `max_tasks_per_run` allowance. Use a separate
+branch/PR per repository-changing task. Verify results and post DONE, BLOCKED, or
+NEEDS_REVIEW with durable evidence. A task-local BLOCKED result does not consume the
+productive allowance; continue to another independent eligible task when safe.
 ```
 
 Gemini Spark supports scheduled tasks directly in its UI. The GitHub/MCP connection is
@@ -240,6 +247,7 @@ READY task, it counts terminal reports it previously posted that still lack a la
 orchestrator review. When that count reaches
 `defaults.max_pending_reviews_per_dispatcher`, the dispatcher stops claiming new work.
 
-The default is 1. This keeps one completed task waiting for review without allowing an
-absent orchestrator to drain the entire READY queue into an ever-growing PR backlog.
-Projects that intentionally pipeline more review work may raise the limit.
+The default is 4. This is deliberately high enough that short review stalls do not
+starve both worker pools, while still bounding an unattended backlog. Because review is
+a persistent drain, reaching the limit is a health signal rather than a normal steady
+state. Projects may tune the limit for their review capacity.

@@ -6,7 +6,7 @@ orchestrator: orchestrator
 
 defaults:
   ack_lease_hours: 3
-  max_pending_reviews_per_dispatcher: 2
+  max_pending_reviews_per_dispatcher: 4
   worker_retry_budget: 3
 
 github:
@@ -59,9 +59,25 @@ github:
 
 pools:
   A:
-    max_tasks_per_run: 1
+    max_tasks_per_run: 2
   B:
-    max_tasks_per_run: 1
+    max_tasks_per_run: 2
+
+
+execution:
+  default_mode: autonomous_if_write_capable
+  failure_scope: candidate_local
+  pinning:
+    mode: fallback
+    require_observed_capability_benefit: true
+  capabilities:
+    source: current_invocation
+    provider_identity_is_not_capability: true
+    runtime_wide_write_denial_is_task_blocker: false
+  persistence:
+    recurring_roles_stay_enabled: true
+  review:
+    persistent_drain: true
 
 scheduler_bootstrap:
   enabled: true
@@ -82,6 +98,12 @@ scheduler_bootstrap:
     schedule_minutes:
       chatgpt: 7
       gemini-spark: 22
+  review_schedule:
+    enabled: true
+    instance_template: "maestaris-{runtime}-review"
+    schedule_minutes:
+      chatgpt: 12
+      gemini-spark: 27
 
 protocol_comment_relay:
   enabled: true

@@ -65,7 +65,7 @@ class MaestarisProtocolV4Tests(unittest.TestCase):
             self.assertNotIn("assigned", registry["github"]["status_labels"])
             self.assertTrue(registry["scheduler_bootstrap"]["enabled"])
             self.assertEqual(
-                registry["defaults"]["max_pending_reviews_per_dispatcher"], 1
+                registry["defaults"]["max_pending_reviews_per_dispatcher"], 4
             )
             self.assertEqual(registry["scheduler_bootstrap"]["source"], "pools")
             self.assertEqual(
@@ -86,6 +86,27 @@ class MaestarisProtocolV4Tests(unittest.TestCase):
             self.assertEqual(
                 registry["scheduler_bootstrap"]["orchestrator_schedule"]["schedule_minutes"],
                 {"chatgpt": 7, "gemini-spark": 22},
+            )
+            self.assertEqual(registry["pools"]["A"]["max_tasks_per_run"], 2)
+            self.assertEqual(registry["pools"]["B"]["max_tasks_per_run"], 2)
+            self.assertEqual(
+                registry["execution"]["default_mode"],
+                "autonomous_if_write_capable",
+            )
+            self.assertEqual(registry["execution"]["pinning"]["mode"], "fallback")
+            self.assertTrue(
+                registry["execution"]["persistence"]["recurring_roles_stay_enabled"]
+            )
+            self.assertTrue(
+                registry["scheduler_bootstrap"]["review_schedule"]["enabled"]
+            )
+            self.assertEqual(
+                registry["scheduler_bootstrap"]["review_schedule"]["instance_template"],
+                "maestaris-{runtime}-review",
+            )
+            self.assertEqual(
+                registry["scheduler_bootstrap"]["review_schedule"]["schedule_minutes"],
+                {"chatgpt": 12, "gemini-spark": 27},
             )
 
             self.assertEqual(
