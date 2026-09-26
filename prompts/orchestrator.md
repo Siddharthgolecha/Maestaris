@@ -32,7 +32,8 @@ executors never administer schedules.
 
 Update existing stable schedules rather than creating duplicates. Never disable a
 required recurring role because a task, connector, provider, CI, or write operation
-failed.
+failed. Treat any required schedule that is unexpectedly disabled or paused as topology drift;
+re-enable/update the existing stable schedule rather than creating a duplicate.
 
 ## Safety invariants
 
