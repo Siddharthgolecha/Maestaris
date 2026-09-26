@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- Make scheduled worker execution autonomous by default when the current runtime can write.
+- Retain exact schedule pinning only as an explicit override or capability fallback.
+- Keep orchestrator, worker pools, and reviewer as persistent service loops; task/provider failures no longer pause roles.
+- Add runtime-capability routing semantics so provider-wide write denial is not misclassified as a task blocker.
+- Raise default review backpressure to four pending results per dispatcher and default worker productive allowance to two tasks per run.
+- Add a persistent review-drain schedule to generated topology and validation.
+
+
 ## 0.6.2
 
 - Fix dogfooding failure where worker pools could accumulate NEEDS_REVIEW results without a recurring Maestaris orchestrator.
