@@ -1,0 +1,6 @@
+{
+  "schema": 1,
+  "event_id": "pool-a-46-20260926T001900Z-needs-review",
+  "issue_number": 46,
+  "body": "[WORKER:maestaris-worker-a:v1]\ntask_id: zerion-v0.7-lifecycle-telemetry\nstatus: NEEDS_REVIEW\ndispatcher: chatgpt-pool-a\nruntime: chatgpt\ninstance: maestaris-chatgpt-pool-A\nhead_sha: 2755b1659176b703eff2aa64734f8c54d44da87b\npr: #88\nci_run: 36202797778\nrelay_event_id: pool-a-46-20260926T001900Z-needs-review\n\n## Summary\nLifecycle telemetry is implemented as a derived/advisory projection; rebuildable lifecycle metrics and credential-free export are covered by tests, including explicit canonical-state invariance.\n\n## Terminal review gate\nCompletion: objective and invariance tests complete.\nScope: only docs/lifecycle-telemetry.md, maestaris_orchestration/telemetry.py, tests/test_telemetry.py.\nExact-head CI: Validate Maestaris run 36202797778 succeeded on 2755b1659176b703eff2aa64734f8c54d44da87b.\nFreshness: PR #88 is mergeable; the one intervening main commit changes only AGENTS.md and prompt files, disjoint from the task diff, so no refresh is required."
+}
