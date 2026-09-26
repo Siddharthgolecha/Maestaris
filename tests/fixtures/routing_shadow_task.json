@@ -1,0 +1,46 @@
+{
+  "repository": "Siddharthgolecha/Maestaris",
+  "issue_number": 94,
+  "branch": "maestaris/task/system1-executor-substrate",
+  "features": {
+    "task_id": "maestaris-v0.7-system1-executor-substrate",
+    "priority": "P0",
+    "requires_write": true,
+    "requires_code_generation": true,
+    "scientific": false,
+    "high_risk": false,
+    "requires_external_network": false,
+    "context_chars": 9000,
+    "candidate_tools": ["read_issue", "read_pr", "run_verifier", "update_task_branch"]
+  },
+  "system1_source": "shadow-laya",
+  "system1_answers": {
+    "route": {
+      "type": "choice",
+      "choice": "standard",
+      "confidence": 0.94
+    },
+    "needs_reasoning": {
+      "type": "noul",
+      "noul": 0.83
+    },
+    "complexity": {
+      "type": "score",
+      "score": 2.6,
+      "confidence": 0.88
+    }
+  },
+  "needle3_response": {
+    "confidence": 0.92,
+    "function_calls": [
+      {
+        "name": "read_issue",
+        "arguments": {"issue_number": 94}
+      },
+      {
+        "name": "run_verifier",
+        "arguments": {}
+      }
+    ]
+  }
+}
