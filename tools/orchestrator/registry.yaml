@@ -1,0 +1,49 @@
+schema: 1
+
+# Semantic tiers survive model/provider churn. Concrete generators are configured by
+# the external executor, not by canonical task state.
+tiers:
+  deterministic:
+    description: fixed rules, parsers, validators, and state machines
+    generator_required: false
+  small:
+    description: bounded extraction/tool selection or inexpensive simple generation
+    generator_required: false
+  standard:
+    description: normal software/research implementation with multi-step reasoning
+    generator_required: true
+  frontier:
+    description: formal proof, high-risk, long-context, or difficult architecture
+    generator_required: true
+
+system1:
+  preference_order:
+    - laya
+    - jev
+  laya:
+    kind: local_or_self_hosted
+    interface: jev_compatible_system_one
+    endpoint_env: LAYA_SYSTEM1_URL
+    secret_env: null
+  jev:
+    kind: hosted
+    interface: jev_compatible_system_one
+    endpoint: https://jevmodel.org/v1/systemone
+    secret_env: JEVMODEL_API_KEY
+
+tool_selection:
+  preference_order:
+    - needle3
+    - deterministic
+  needle3:
+    kind: local_or_self_hosted
+    response_contract: function_calls_confidence
+    endpoint_env: NEEDLE3_URL
+
+system2:
+  # Deliberately semantic: a deployment can map these lanes to Codex or another
+  # generator without changing task truth.
+  standard:
+    model_env: MAESTARIS_STANDARD_MODEL
+  frontier:
+    model_env: MAESTARIS_FRONTIER_MODEL
