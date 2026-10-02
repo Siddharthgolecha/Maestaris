@@ -17,10 +17,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          required=(AGENTS.md README.md coordination/maestaris.yaml prompts/worker-pool.md prompts/orchestrator.md docs/protocol.md)
+          required=(AGENTS.md README.md VERSION coordination/maestaris.yaml prompts/worker-pool.md prompts/orchestrator.md docs/protocol.md docs/releases/v0.7.0.md)
           for path in "${required[@]}"; do
             test -f "$path" || { echo "missing $path"; exit 1; }
           done
+          grep -q '^0\.7\.0$' VERSION
+          grep -q '^## 0\.7\.0 — 2026-10-02$' CHANGELOG.md
           grep -q '^mode: chat-first$' coordination/maestaris.yaml
           test ! -d maestaris_orchestration
           test ! -d tests
